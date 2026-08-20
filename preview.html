@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e2622f">
+<title>朋友約飯神器（預覽版）</title>
+<meta name="description" content="三五好友各自填條件，自動配對雙北餐廳並投票決定。">
+<style>
+:root{
+  --bg:#faf7f2; --card:#fff; --ink:#2a2724; --ink2:#6e675e; --ink3:#a09889;
+  --line:#e9e2d6; --line2:#f2ece1;
+  --brand:#e2622f; --brand-d:#c44f21; --brand-l:#fdefe7;
+  --green:#2f9169; --green-l:#e6f3ed;
+  --amber:#c8891c; --amber-l:#fdf3e0;
+  --red:#c4483a; --red-l:#fbeae7;
+  --sh:0 1px 2px rgba(42,39,36,.04), 0 6px 20px rgba(42,39,36,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);line-height:1.6;
+  font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;font-size:16px;
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px 96px}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+button{cursor:pointer;border:none;transition:.15s}
+a{color:var(--brand)}
+.hide{display:none !important}
+
+/* ---------- header ---------- */
+.top{padding:32px 0 20px;text-align:center}
+.top .logo{font-size:34px;line-height:1}
+.top h1{margin:8px 0 0;font-size:25px;font-weight:800;letter-spacing:-.4px}
+.top p{margin:6px 0 0;color:var(--ink2);font-size:14.5px}
+
+/* ---------- card ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--sh);margin-bottom:14px}
+.card h2{margin:0 0 3px;font-size:17px;font-weight:800}
+.card .sub{margin:0 0 16px;color:var(--ink3);font-size:13.5px}
+
+/* ---------- form ---------- */
+.field{margin-bottom:18px}
+.field > label{display:block;font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:7px;letter-spacing:.3px}
+.field .hint{font-size:12.5px;color:var(--ink3);font-weight:400;margin-left:6px}
+input[type=text],input[type=date],input[type=time],input[type=number]{
+  width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;
+  background:#fdfcfa;color:var(--ink);outline:none;transition:.15s
+}
+input:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px var(--brand-l)}
+.row{display:flex;gap:10px}
+.row > *{flex:1;min-width:0}
+
+.btn{padding:13px 20px;border-radius:12px;background:var(--brand);color:#fff;font-weight:800;font-size:15.5px;width:100%}
+.btn:hover{background:var(--brand-d)}
+.btn:disabled{background:#d9d2c6;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink2);border:1.5px solid var(--line)}
+.btn.ghost:hover{background:#fdfcfa;border-color:var(--ink3);color:var(--ink)}
+.btn.sm{padding:9px 15px;font-size:13.5px;width:auto;border-radius:10px}
+.btn.green{background:var(--green)}
+.btn.green:hover{filter:brightness(1.07)}
+
+/* chips */
+.opts{display:flex;flex-wrap:wrap;gap:7px}
+.opt{padding:8px 13px;border-radius:999px;background:#fbf9f5;border:1.5px solid var(--line);font-size:14px;color:var(--ink2);font-weight:600}
+.opt:hover{border-color:var(--brand);color:var(--brand)}
+.opt.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* segmented */
+.seg{display:flex;background:#f4f0e8;border-radius:11px;padding:3px;gap:2px}
+.seg button{flex:1;padding:9px 6px;border-radius:9px;background:transparent;font-size:14px;color:var(--ink2);font-weight:700}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.09)}
+
+.linkbtn{margin-top:9px;background:none;color:var(--brand);font-size:13.5px;font-weight:700;padding:4px 0}
+.linkbtn:hover{text-decoration:underline}
+#linePicker{margin-top:11px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fdfcfa}
+.lines{display:flex;flex-wrap:wrap;gap:6px}
+.lines button{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;
+  background:#fff;border:1.5px solid var(--line);font-size:13px;font-weight:700;color:var(--ink2)}
+.lines button:hover{border-color:var(--ink3);color:var(--ink)}
+.lines button.on{border-color:currentColor}
+.lines .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.stops{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
+.stops:empty{margin-top:0}
+.stops .seq{width:100%;font-size:12px;color:var(--ink3);margin-bottom:2px}
+.stops button{padding:6px 11px;border-radius:8px;background:#fff;border:1px solid var(--line);
+  font-size:13.5px;color:var(--ink2)}
+.stops button:hover{border-color:var(--brand);color:var(--brand)}
+.stationOK{margin-top:7px;font-size:13px;color:var(--green);font-weight:700}
+.suggest{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.suggest span{font-size:12.5px;color:var(--ink3)}
+.suggest button{padding:5px 11px;border-radius:8px;background:#fff;border:1.5px solid var(--line);
+  font-size:13.5px;color:var(--ink2);font-weight:600}
+.suggest button:hover{border-color:var(--brand);color:var(--brand)}
+.stationBad{margin-top:7px;font-size:13px;color:var(--red);font-weight:700}
+
+/* ---------- room header ---------- */
+.roombar{background:linear-gradient(135deg,#fff3ea,#fde9dc);border:1px solid #f5d9c6;border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.roombar .titlerow{display:flex;align-items:flex-start;gap:10px}
+.roombar h2{margin:0;font-size:20px;font-weight:800;flex:1;min-width:0}
+.editbtn{background:rgba(255,255,255,.7);border:1px solid #f0d3bd;color:#9a5c33;
+  padding:4px 10px;border-radius:8px;font-size:12px;font-weight:700;flex-shrink:0}
+.editbtn:hover{background:#fff}
+#roomEdit .field{margin-bottom:10px}
+#roomEdit label{display:block;font-size:12px;font-weight:800;color:#9a5c33;margin-bottom:5px}
+#roomEdit input{background:#fff;border-color:#f0d3bd}
+.roombar .when{margin:5px 0 0;color:#9a5c33;font-size:14.5px;font-weight:700}
+.roombar .share{display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap}
+.roombar code{background:#fff;border:1px solid #f0d3bd;padding:7px 13px;border-radius:9px;font-size:16px;font-weight:800;letter-spacing:2px;color:var(--brand-d)}
+
+/* ---------- members ---------- */
+.mlist{display:flex;flex-direction:column;gap:9px}
+.m{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fdfcfa}
+.m.me{border-color:#f0c4a8;background:var(--brand-l)}
+.av{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.m .info{flex:1;min-width:0}
+.m .info b{font-size:15px}
+.m .info .d{font-size:12.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m .tag{font-size:11.5px;padding:3px 8px;border-radius:6px;background:var(--brand-l);color:var(--brand-d);font-weight:800;white-space:nowrap}
+
+/* ---------- results ---------- */
+.sec{margin-top:26px}
+.sec-h{display:flex;align-items:baseline;gap:9px;margin-bottom:6px;flex-wrap:wrap}
+.sec-h h3{margin:0;font-size:19px;font-weight:800}
+.sec-h .cnt{font-size:12.5px;color:var(--ink3)}
+.sec > p.lead{margin:0 0 14px;font-size:13.5px;color:var(--ink2)}
+
+.r{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:16px 17px;box-shadow:var(--sh);margin-bottom:12px;position:relative}
+.r.voted{border-color:var(--green);box-shadow:0 0 0 2px var(--green-l),var(--sh)}
+.r.win{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-l),var(--sh)}
+.r .rh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.r h4{margin:0;font-size:17.5px;font-weight:800;letter-spacing:-.2px}
+.r .why{font-size:12.5px;color:var(--brand-d);font-weight:800;margin-bottom:6px}
+.r .meta{display:flex;gap:9px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px;align-items:center}
+.r .meta .dot{color:var(--ink3)}
+.r .note{margin:9px 0 0;font-size:13.5px;color:var(--ink2)}
+.rating{background:var(--amber-l);color:#8a5c11;padding:2px 8px;border-radius:6px;font-size:12.5px;font-weight:800}
+.pill{padding:3px 9px;border-radius:7px;font-size:12px;font-weight:800;white-space:nowrap}
+.pill.ok{background:var(--green-l);color:#1d6b4b}
+.pill.warn{background:var(--amber-l);color:#8a5c11}
+.pill.bad{background:var(--red-l);color:#96342a}
+/* 想吃人數：人越多顏色越搶眼，一眼就看得出哪些是多數人的共識 */
+.pill.v-all{background:var(--brand);color:#fff}
+.pill.v4{background:#dcefe4;color:#1c6b46}
+.pill.v3{background:var(--green-l);color:#1d6b4b}
+.pill.v2{background:#e4eef7;color:#2a5f8a}
+.pill.v1{background:#f2efe8;color:var(--ink3)}
+.pill.soft{background:#f2efe8;color:var(--ink2)}
+.pill.cheap{background:#e9f2e6;color:#3d6b2c}
+.walk{color:var(--ink2);white-space:nowrap}
+.src{padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;background:#f2efe8;color:var(--ink3);white-space:nowrap;cursor:help}
+
+.who{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+.who span{font-size:12.5px;padding:4px 9px;border-radius:7px;background:#f7f4ee;color:var(--ink2);font-weight:600}
+.who span.bad{background:var(--red-l);color:#96342a}
+
+.links{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap}
+.links a{flex:1;min-width:96px;text-align:center;padding:9px 6px;border-radius:10px;border:1.5px solid var(--line);color:var(--ink2);text-decoration:none;font-size:13px;font-weight:700;background:#fdfcfa}
+.links a:hover{border-color:var(--brand);color:var(--brand)}
+
+.votebar{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.votebar .tally{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
+.votebar .num{font-size:20px;font-weight:800;color:var(--green)}
+.votebar .names{font-size:12.5px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vbtn{padding:9px 17px;border-radius:10px;background:#fff;border:1.5px solid var(--line);color:var(--ink2);font-weight:800;font-size:13.5px;flex-shrink:0}
+.vbtn:hover{border-color:var(--green);color:var(--green)}
+.vbtn.on{background:var(--green);border-color:var(--green);color:#fff}
+
+.ref{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px;background:#fbf9f5;border:1px dashed var(--line);border-radius:12px;padding:12px 15px;margin-bottom:12px;font-size:13.5px}
+.ref b{font-weight:800;color:var(--brand-d)}
+.ref span{color:var(--ink2)}
+.ref strong{color:var(--ink);font-weight:800}
+.ref em{font-style:normal;color:var(--ink3);font-size:12.5px;width:100%}
+
+/* ---------- misc ---------- */
+.warnbox{background:var(--amber-l);border:1px solid #f0dcb8;border-radius:12px;padding:13px 15px;margin-bottom:12px;font-size:13.5px;color:#7d5410}
+.warnbox b{display:block;margin-bottom:3px}
+.warnbox ul{margin:0;padding-left:19px}
+.err{background:var(--red-l);border:1px solid #f0c4bc;color:#96342a;border-radius:11px;padding:11px 14px;font-size:14px;margin-bottom:12px;font-weight:600}
+.blank{text-align:center;padding:44px 20px;color:var(--ink3)}
+.blank .big{font-size:40px;margin-bottom:8px}
+.sticky{position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 68%,transparent);padding:16px 0 12px;margin-top:6px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:11px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{text-align:center;color:var(--ink3);font-size:12px;padding:26px 0 0;line-height:1.7}
+
+/* ---------- 票數排行 ---------- */
+.board{background:linear-gradient(135deg,#fff8ec,#fdf0d9);border:1px solid #f0dcb8;border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.board-h{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:800;color:#8a5a13;margin-bottom:12px}
+.board-h span{font-size:12.5px;font-weight:600;color:#a9843f}
+.board .row{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid #f2e2c6}
+.board .row:first-of-type{border-top:none}
+.board .medal{font-size:19px;width:24px;text-align:center;flex-shrink:0}
+.board .info{flex:1;min-width:0}
+.board .info b{display:block;font-size:15.5px;color:var(--ink);line-height:1.35}
+.board .info .sub{display:block;font-size:12px;color:#a9843f;line-height:1.45;margin-bottom:5px}
+.board .bar{display:block;height:5px;background:#f2e2c6;border-radius:3px;overflow:hidden}
+.board .bar i{display:block;height:100%;background:var(--amber);border-radius:3px;transition:width .3s}
+.board .row.lead .bar i{background:var(--brand)}
+.board .cnt{font-size:20px;font-weight:800;color:#8a5a13;flex-shrink:0}
+.board .cnt em{font-style:normal;font-size:11.5px;font-weight:700}
+.board .more{font-size:12px;color:#a9843f;padding-top:9px;border-top:1px solid #f2e2c6}
+.clearv{margin-top:11px;width:100%;background:#fff;border:1px solid #f0dcb8;color:#8a5a13;padding:8px;border-radius:9px;font-size:12.5px;font-weight:700}
+.clearv:hover{background:#fffdf8}
+
+@media(max-width:520px){
+  .top h1{font-size:22px}
+  .r h4{font-size:16.5px}
+  .roombar h2{font-size:18px}
+}
+
+
+/* ==================== 角色玩法 ==================== */
+
+/* 彈窗 */
+.modal{position:fixed;inset:0;background:rgba(30,27,24,.62);display:none;align-items:center;
+  justify-content:center;padding:22px;z-index:200;backdrop-filter:blur(3px)}
+.modal.on{display:flex}
+.mbox{background:var(--card);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.28);animation:pop .28s cubic-bezier(.2,1.2,.4,1)}
+@keyframes pop{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+.mtag{font-size:11.5px;font-weight:800;letter-spacing:2px;color:var(--ink3)}
+.memoji{font-size:58px;line-height:1.1;margin:10px 0 2px}
+.mbox h3{margin:0 0 10px;font-size:24px;font-weight:800}
+.mpower{margin:0 0 10px;font-size:15px;font-weight:700;color:var(--brand-d);line-height:1.55}
+.mdetail{margin:0 0 20px;font-size:13.5px;color:var(--ink2);line-height:1.7}
+.mtagline{margin:0 0 12px;font-size:16px;color:var(--ink);font-weight:700;line-height:1.6}
+.mrole.poison h3{color:var(--red)}
+
+/* 我的角色小卡 */
+.myrole{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px dashed var(--brand);
+  border-radius:14px;padding:13px 15px;margin-bottom:14px;cursor:pointer}
+.myrole:hover{background:var(--brand-l)}
+.myrole .e{font-size:28px;flex-shrink:0}
+.myrole div{flex:1;min-width:0}
+.myrole b{display:block;font-size:15px}
+.myrole span{font-size:12.5px;color:var(--ink2);display:block;line-height:1.5}
+.myrole .q{width:22px;height:22px;border-radius:50%;background:var(--brand-l);color:var(--brand-d);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+
+/* 等待進度 */
+.waiting{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.waiting span{font-size:12.5px;padding:4px 10px;border-radius:8px;background:#fff;
+  border:1px solid #f0dcb8;color:#a9843f;font-weight:600}
+.waiting span.done{background:var(--green-l);border-color:#c3e3d3;color:#1d6b4b}
+.hidden-note{margin:0;font-size:12.5px;color:#a9843f;line-height:1.6}
+.doneBox{background:var(--green-l);border:1px solid #c3e3d3;border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.doneBox b{display:block;font-size:15px;color:#1d6b4b;margin-bottom:3px}
+.doneBox p{margin:0;font-size:13px;color:#3d7a5e}
+
+/* 轉盤 */
+.wheelbox{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:20px;margin-bottom:14px;text-align:center;box-shadow:var(--sh)}
+.wheelbox h3{margin:0 0 5px;font-size:17px;font-weight:800}
+.wheelbox p{margin:0 0 16px;font-size:13.5px;color:var(--ink2);line-height:1.6}
+.wheelwrap{position:relative;width:250px;height:250px;margin:0 auto 18px}
+.pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:26px;
+  color:var(--brand);z-index:2;text-shadow:0 2px 4px rgba(0,0,0,.2)}
+.wheel{width:100%;height:100%;border-radius:50%;position:relative;
+  border:6px solid #fff;box-shadow:0 6px 22px rgba(0,0,0,.18)}
+.wheel .wl{position:absolute;top:50%;left:50%;transform-origin:0 0;color:#fff;font-size:11px;
+  font-weight:800;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.45);pointer-events:none}
+
+/* 魔法師 */
+.wizbox{background:#f4f0f8;border:1px solid #ddd0e8;border-radius:16px;padding:18px;margin-bottom:14px}
+.wizbox h3{margin:0 0 5px;font-size:16px;font-weight:800;color:#6b3f8f}
+.wizbox p{margin:0 0 12px;font-size:13px;color:#7d6091;line-height:1.6}
+.swaptags{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.swaptags span{background:#fff;border:1.5px solid #ddd0e8;padding:6px 12px;border-radius:9px;
+  font-size:13.5px;font-weight:700;color:#6b3f8f}
+.swaptags span.ph{border-style:dashed;color:#a992ba;font-weight:600}
+.swaptags em{font-style:normal;color:#a07ec0;font-weight:800}
+
+/* 選取狀態 */
+.r.picked{border-color:var(--green);box-shadow:0 0 0 2px var(--green-l),var(--sh)}
+.r.mystery{border-color:#c9a227;background:linear-gradient(135deg,#fffdf5,#fdf8e8)}
+.pill.mys{background:#f5e6b8;color:#7a5c10}
+.note.dim{color:var(--ink3);font-size:12.5px}
+.pickbar{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.pickbtn{flex:1;padding:11px;border-radius:10px;background:#fff;border:1.5px solid var(--line);
+  color:var(--ink2);font-weight:800;font-size:14px}
+.pickbtn:hover{border-color:var(--green);color:var(--green)}
+.pickbtn.on{background:var(--green);border-color:var(--green);color:#fff}
+.swapbtn{flex:0 0 auto;padding:11px 14px;border-radius:10px;background:#fff;border:1.5px solid #ddd0e8;
+  color:#6b3f8f;font-weight:800;font-size:13.5px}
+.swapbtn.on{background:#6b3f8f;border-color:#6b3f8f;color:#fff}
+
+/* 揭曉 */
+.board.reveal{background:linear-gradient(135deg,#fff4e3,#fde7cf);border-color:#f0cba8}
+.rolelist{display:flex;flex-direction:column;gap:7px}
+.rolelist span{font-size:13.5px;color:#8a5a13}
+.rolelist b{font-size:16px}
+
+/* 神秘店家揭曉 */
+.unmask{font-size:12px;font-weight:700;color:#8a6a12;letter-spacing:.4px;margin-bottom:4px}
+.unmaskbox{background:linear-gradient(135deg,#fffdf5,#fdf3d6);border:1px solid #e6cf8a;
+  border-radius:14px;padding:16px 15px;margin-bottom:12px;text-align:center;color:#6d5310}
+.unmaskbox b{display:block;font-size:13px;letter-spacing:.5px;margin-bottom:6px}
+.unmaskbox .alias{margin:0;font-size:13px;color:#9a7c2a}
+.unmaskbox .real{margin:2px 0 6px;font-size:21px;font-weight:800;color:#4d3a06;line-height:1.3}
+.unmaskbox .sub{margin:2px 0;font-size:13px;color:#8a6a12}
+
+/* 彩蛋的 10 秒視窗 */
+.mycd{margin:14px 0 10px}
+.mycd .num{font-size:30px;font-weight:800;color:#c8891c;font-variant-numeric:tabular-nums;
+  display:inline-block;min-width:34px}
+.mybar{height:6px;border-radius:99px;background:#eee3c6;overflow:hidden;margin:8px 0 6px}
+.mybar i{display:block;height:100%;background:linear-gradient(90deg,#e2a72f,#c8891c);
+  border-radius:99px;transition:width 1s linear}
+.mynote{margin:0;font-size:12.5px;color:var(--ink3)}
+.myacts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.myacts .btn{width:100%}
+.pickbtn.locked{display:block;text-align:center;padding:11px;border-radius:10px;
+  background:#f4f1ea;color:var(--ink3);font-size:14px;font-weight:700;cursor:default;flex:1}
+.pickbtn.locked.on{background:#f5e6b8;color:#7a5c10}
+
+/* 預覽版專用 */
+.pvbar{position:sticky;top:0;z-index:50;background:#2a2724;color:#fff;padding:10px 14px;margin:0 -16px 14px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.pvbar b{background:#e2622f;padding:2px 8px;border-radius:6px;font-size:11.5px;letter-spacing:.5px}
+.pvbar button{background:#443f39;color:#fff;border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:700}
+.pvbar button:hover{background:#5a534b}
+.pvbar span{color:#a9a199;font-size:12px}
+.pvnote{background:#fff8ec;border:1px solid #f0dcb8;border-radius:11px;padding:11px 14px;
+  font-size:12.5px;color:#7d5410;margin-bottom:14px;line-height:1.65}
+
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+<div class="wrap">
+  <div class="pvbar">
+    <b>預覽版</b>
+    <button onclick="pvDemo()">載入 3 位示範成員</button>
+    <button onclick="pvNew()">＋ 換一個人填</button>
+    <button onclick="pvSwitch()">切換身分</button>
+    <button onclick="pvReset()">全部重來</button>
+    <span id="pvWho"></span>
+  </div>
+
+  <!-- ============ 首頁 ============ -->
+  <div id="viewHome">
+    <div class="top">
+      <div class="logo">🍽️</div>
+      <h1>朋友約飯神器</h1>
+      <p>各自填條件，剩下的交給它決定</p>
+    </div>
+
+    <div class="card">
+      <h2>開一場飯局</h2>
+      <p class="sub">建好之後把連結丟群組，大家各自填就好</p>
+
+      <div class="field">
+        <label>飯局名稱</label>
+        <input type="text" id="hTitle" placeholder="例：週五下班聚餐" maxlength="40">
+      </div>
+      <div class="field">
+        <label>日期與時間</label>
+        <div class="row">
+          <input type="date" id="hDate">
+          <input type="time" id="hTime" value="19:00">
+        </div>
+      </div>
+      <button class="btn" id="btnCreate">建立飯局</button>
+    </div>
+
+    <div class="card">
+      <h2>已經有房號了？</h2>
+      <p class="sub">輸入朋友給你的 6 碼房號</p>
+      <div class="row">
+        <input type="text" id="hJoin" placeholder="例：K7M2QP" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-weight:800">
+        <button class="btn ghost" id="btnJoin" style="flex:0 0 100px">進入</button>
+      </div>
+    </div>
+
+    <footer>
+      收錄雙北 <b id="statR">—</b> 家餐廳 · 台北捷運 <b id="statS">—</b> 站<br>
+      距離以「捷運站數」計算，會挑站數最少的走法
+    </footer>
+  </div>
+
+  <!-- ============ 房間 ============ -->
+  <div id="viewRoom" class="hide">
+    <div class="roombar">
+      <div id="roomView">
+        <div class="titlerow">
+          <h2 id="rTitle">—</h2>
+          <button class="editbtn" id="btnEditRoom" title="改名稱或時間">✎ 編輯</button>
+        </div>
+        <p class="when" id="rWhen">—</p>
+      </div>
+
+      <div id="roomEdit" class="hide">
+        <div class="field"><label>飯局名稱</label>
+          <input type="text" id="eTitle" maxlength="40"></div>
+        <div class="field" style="margin-bottom:12px"><label>日期與時間</label>
+          <div class="row"><input type="date" id="eDate"><input type="time" id="eTime"></div></div>
+        <div class="row">
+          <button class="btn sm" id="btnSaveRoom" style="width:100%">儲存</button>
+          <button class="btn sm ghost" id="btnCancelRoom" style="width:100%">取消</button>
+        </div>
+      </div>
+
+      <div class="share">
+        <code id="rCode">—</code>
+        <button class="btn sm ghost" id="btnCopy">複製邀請連結</button>
+        <button class="btn sm ghost" id="btnHome">回首頁</button>
+      </div>
+    </div>
+
+    <div id="errBox"></div>
+
+    <!-- 我的條件 -->
+    <div class="card" id="meCard">
+      <h2 id="meTitle">填寫你的條件</h2>
+      <p class="sub" id="meSub">三個問題，20 秒填完</p>
+
+      <div id="meForm">
+        <div class="field">
+          <label>你的暱稱</label>
+          <input type="text" id="fName" placeholder="大家認得出來就好" maxlength="12">
+        </div>
+
+        <div class="field">
+          <label>你現在在哪 <span class="hint">最近的捷運站</span></label>
+          <input type="text" id="fStation" placeholder="直接打站名，例如：忠孝復興" autocomplete="off">
+          <div id="stationMsg"></div>
+          <button type="button" class="linkbtn" id="btnLines">🚇 依路線選擇</button>
+          <div id="linePicker" class="hide">
+            <div class="lines" id="lineList"></div>
+            <div class="stops" id="stopList"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>最遠可接受幾站 <span class="hint">從你所在的站算起</span></label>
+          <div class="seg" id="fDist">
+            <button data-v="2">2 站</button><button data-v="4">4 站</button>
+            <button data-v="6" class="on">6 站</button><button data-v="10">10 站</button>
+            <button data-v="40">不限</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>今天想吃啥 <span class="hint">可複選，最多 8 種</span></label>
+          <div class="opts" id="fTypes"></div>
+        </div>
+
+        <button class="btn" id="btnSubmit">送出我的條件</button>
+      </div>
+
+      <div id="meDone" class="hide">
+        <div class="m me">
+          <div class="av" id="meAv">—</div>
+          <div class="info"><b id="meName">—</b><div class="d" id="meDetail">—</div></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn ghost sm" id="btnEdit" style="width:100%">修改我的條件</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成員 -->
+    <div class="card">
+      <h2>已經填好的人 <span id="mCount" style="color:var(--ink3);font-weight:600"></span></h2>
+      <p class="sub">有人改條件的話，推薦與投票會重新來過</p>
+      <div class="mlist" id="mList"></div>
+      <div class="sticky">
+        <button class="btn green" id="btnGen">產生餐廳推薦</button>
+      </div>
+    </div>
+
+    <!-- 結果 -->
+    <div id="results"></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"></div>
+<script>
+
+/* ===== 由 build-preview.js 自動產生，請勿手動修改 ===== */
+
+var MRT = (function(){
+/**
+ * 台北捷運路網（雙北）
+ * 每條線以「站點順序陣列」表示，相鄰兩站 = 1 站距離。
+ * 同名車站自動視為轉乘點（不額外計算站數，但會記錄換乘次數）。
+ * 資料來源：維基百科各路線條目、台北捷運官網、新北大眾捷運。
+ */
+
+const LINES = [
+  {
+    id: "BR", name: "文湖線", color: "#B57A25",
+    stations: ["動物園","木柵","萬芳社區","萬芳醫院","辛亥","麟光","六張犁","科技大樓","大安","忠孝復興","南京復興","中山國中","松山機場","大直","劍南路","西湖","港墘","文德","內湖","大湖公園","葫洲","東湖","南港軟體園區","南港展覽館"]
+  },
+  {
+    id: "R", name: "淡水信義線", color: "#D90023",
+    stations: ["淡水","紅樹林","竹圍","關渡","忠義","復興崗","北投","奇岩","唭哩岸","石牌","明德","芝山","士林","劍潭","圓山","民權西路","雙連","中山","台北車站","台大醫院","中正紀念堂","東門","大安森林公園","大安","信義安和","台北101/世貿","象山"]
+  },
+  {
+    id: "R-b", name: "新北投支線", color: "#D90023",
+    stations: ["北投","新北投"]
+  },
+  {
+    id: "G", name: "松山新店線", color: "#107B41",
+    stations: ["松山","南京三民","台北小巨蛋","南京復興","松江南京","中山","北門","西門","小南門","中正紀念堂","古亭","台電大樓","公館","萬隆","景美","大坪林","七張","新店區公所","新店"]
+  },
+  {
+    id: "G-b", name: "小碧潭支線", color: "#107B41",
+    stations: ["七張","小碧潭"]
+  },
+  {
+    id: "O", name: "中和新蘆線", color: "#F5A302",
+    stations: ["南勢角","景安","永安市場","頂溪","古亭","東門","忠孝新生","松江南京","行天宮","中山國小","民權西路","大橋頭"]
+  },
+  {
+    id: "O-h", name: "中和新蘆線（迴龍）", color: "#F5A302",
+    stations: ["大橋頭","台北橋","菜寮","三重","先嗇宮","頭前庄","新莊","輔大","丹鳳","迴龍"]
+  },
+  {
+    id: "O-l", name: "中和新蘆線（蘆洲）", color: "#F5A302",
+    stations: ["大橋頭","三重國小","三和國中","徐匯中學","三民高中","蘆洲"]
+  },
+  {
+    id: "BL", name: "板南線", color: "#0070BD",
+    stations: ["頂埔","永寧","土城","海山","亞東醫院","府中","板橋","新埔","江子翠","龍山寺","西門","台北車站","善導寺","忠孝新生","忠孝復興","忠孝敦化","國父紀念館","市政府","永春","後山埤","昆陽","南港","南港展覽館"]
+  },
+  {
+    id: "Y", name: "環狀線", color: "#FFDB00",
+    stations: ["大坪林","十四張","秀朗橋","景平","景安","中和","橋和","中原","板新","板橋","新埔民生","頭前庄","幸福","新北產業園區"]
+  },
+  // 以下兩條是新北捷運的輕軌，不屬於台北捷運本體，但同屬雙北路網、也能轉乘，
+  // 所以一起收進來。紅樹林與十四張是它們跟捷運的轉乘點。
+  {
+    id: "V", name: "淡海輕軌綠山線", color: "#96C954", lrt: true,
+    stations: ["紅樹林","竿蓁林","淡金鄧公","淡江大學","淡金北新","新市一路","淡水行政中心","濱海義山","濱海沙崙","淡海新市鎮","崁頂"]
+  },
+  {
+    id: "V-b", name: "淡海輕軌藍海線", color: "#5BB3D9", lrt: true,
+    stations: ["濱海沙崙","台北海洋科技大學","沙崙","淡水漁人碼頭"]
+  },
+  {
+    id: "K", name: "安坑輕軌", color: "#7ECBC4", lrt: true,
+    stations: ["雙城","玫瑰中國城","台北小城","耕莘安康院區","景文科大","安康","陽光運動公園","新和國小","十四張"]
+  }
+];
+
+/** 站名不同但實際可步行轉乘，成本以 1 站計 */
+const WALK_LINKS = [
+  ["新埔民生", "新埔", 1]
+];
+
+/** 常見別名 → 正式站名 */
+const ALIASES = {
+  "臺北車站":"台北車站","北車":"台北車站","台北":"台北車站","主車站":"台北車站",
+  "101":"台北101/世貿","世貿":"台北101/世貿","台北101":"台北101/世貿","象山101":"台北101/世貿",
+  "小巨蛋":"台北小巨蛋","巨蛋":"台北小巨蛋",
+  "中紀":"中正紀念堂","國館":"國父紀念館","國紀":"國父紀念館",
+  "台電":"台電大樓","北科大":"忠孝新生","師大":"古亭","台大":"公館",
+  "SOGO":"忠孝復興","東區":"忠孝復興","信義區":"市政府","市府":"市政府",
+  "新板":"板橋","板橋車站":"板橋","新莊副都心":"新北產業園區",
+  "漁人碼頭":"淡水漁人碼頭","海洋大學":"台北海洋科技大學","台北海洋大學":"台北海洋科技大學",
+  "淡江":"淡江大學","景文":"景文科大"
+};
+
+/* ---------- 建圖 ---------- */
+function buildGraph(){
+  const adj = new Map();          // 站名 -> Map(鄰站 -> {cost, line})
+  const stationLines = new Map(); // 站名 -> Set(路線 id)
+
+  function ensure(s){ if(!adj.has(s)) adj.set(s, new Map()); return adj.get(s); }
+  function link(a, b, cost, line){
+    const A = ensure(a), B = ensure(b);
+    if(!A.has(b) || A.get(b).cost > cost) A.set(b, {cost, line});
+    if(!B.has(a) || B.get(a).cost > cost) B.set(a, {cost, line});
+  }
+
+  LINES.forEach(function(L){
+    L.stations.forEach(function(s, i){
+      ensure(s);
+      if(!stationLines.has(s)) stationLines.set(s, new Set());
+      stationLines.get(s).add(L.id);
+      if(i > 0) link(L.stations[i-1], s, 1, L.id);
+    });
+  });
+
+  WALK_LINKS.forEach(function(w){ link(w[0], w[1], w[2], "walk"); });
+
+  return { adj, stationLines };
+}
+
+const GRAPH = buildGraph();
+
+// 供比對用：全部站名（排序過，順序不具意義）
+const ALL_STATIONS = Array.from(GRAPH.adj.keys()).sort();
+
+// 供前端選單用：依路線分組，站序照官方路線圖由起點到終點
+const STATIONS_BY_LINE = LINES.map(function(L){
+  return { id: L.id, name: L.name, color: L.color, lrt: !!L.lrt, stations: L.stations.slice() };
+});
+
+function normalizeStation(name){
+  if(!name) return null;
+  let s = String(name).trim().replace(/[站臺]/g, function(m){ return m === "臺" ? "台" : ""; });
+  if(GRAPH.adj.has(s)) return s;
+  if(ALIASES[s]) return ALIASES[s];
+  const raw = String(name).trim();
+  if(GRAPH.adj.has(raw)) return raw;
+  if(ALIASES[raw]) return ALIASES[raw];
+  // 模糊比對：包含關係
+  const hit = ALL_STATIONS.find(function(x){ return x.indexOf(s) >= 0 || s.indexOf(x) >= 0; });
+  return hit || null;
+}
+
+/**
+ * 最短路徑，字典序最佳化：先讓「站數」最少，站數相同時再挑「換乘次數」最少的走法。
+ *
+ * 這樣做是為了跟使用者填的「最遠可接受幾站」保持一致 —— 篩選與顯示用的
+ * 是同一個數字，不會出現「明明有 4 站的走法卻顯示 5 站」這種矛盾。
+ * 實作上把成本編碼成 站數 × STATION_WEIGHT + 換乘數，換乘只用來打平手。
+ */
+const STATION_WEIGHT = 100;
+const _cache = new Map();
+
+function distance(from, to){
+  const a = normalizeStation(from), b = normalizeStation(to);
+  if(!a || !b) return null;
+  if(a === b) return { stations: 0, transfers: 0, path: [a] };
+
+  const key = a + " " + b;
+  if(_cache.has(key)) return _cache.get(key);
+
+  const best = new Map();   // "站名|路線" -> 排序成本
+  const meta = new Map();   // "站名|路線" -> {station, stations, transfers, prev}
+  const visited = new Set();
+  const pq = [];
+
+  function push(station, line, cost, stations, transfers, prevKey){
+    const k = station + "|" + line;
+    if(best.has(k) && best.get(k) <= cost) return;
+    best.set(k, cost);
+    meta.set(k, { station: station, stations: stations, transfers: transfers, prev: prevKey });
+    pq.push([cost, k, station, line]);
+  }
+
+  push(a, "*", 0, 0, 0, null);
+  let goalKey = null;
+
+  while(pq.length){
+    pq.sort(function(x, y){ return x[0] - y[0]; });
+    const cur = pq.shift();
+    const cost = cur[0], k = cur[1], u = cur[2], line = cur[3];
+    if(visited.has(k)) continue;
+    visited.add(k);
+    if(best.get(k) < cost) continue;
+    if(u === b){ goalKey = k; break; }
+
+    const nbrs = GRAPH.adj.get(u);
+    if(!nbrs) continue;
+    const m = meta.get(k);
+    nbrs.forEach(function(info, v){
+      const changed = (line !== "*" && info.line !== line);
+      const nCost = cost + info.cost * STATION_WEIGHT + (changed ? 1 : 0);
+      push(v, info.line, nCost, m.stations + info.cost, m.transfers + (changed ? 1 : 0), k);
+    });
+  }
+
+  if(!goalKey){ _cache.set(key, null); return null; }
+
+  const path = [];
+  let k = goalKey;
+  while(k){ const m = meta.get(k); path.unshift(m.station); k = m.prev; }
+
+  const g = meta.get(goalKey);
+  const res = { stations: g.stations, transfers: g.transfers, path: path };
+  _cache.set(key, res);
+  return res;
+}
+
+return { LINES: LINES, ALL_STATIONS: ALL_STATIONS, STATIONS_BY_LINE: STATIONS_BY_LINE, ALIASES: ALIASES, normalizeStation: normalizeStation, distance: distance };
+})();
+var DB = (function(){
+/**
+ * 雙北餐廳種子資料
+ *
+ * 這份清單是「起始種子」，設計成很好改：
+ *   - CHAINS  連鎖品牌，一個品牌對應多個捷運站，會自動展開成多筆
+ *   - INDIE   單店，直接指定所在捷運站
+ *
+ * price = 每人概估消費（新台幣），純粹顯示用；不確定就填 null。
+ * 地圖與訂位一律用「搜尋連結」產生，不寫死網址，所以不會有連結失效的問題。
+ *
+ * 想加自己的口袋名單，直接往下面陣列加一筆就好，伺服器重啟就生效。
+ */
+
+/** 餐廳類型（前端「今天想吃啥」的選項就是這份清單） */
+const TYPES = [
+  { id: "japanese",  label: "日式定食・丼飯", emoji: "🍱" },
+  { id: "ramen",     label: "拉麵",           emoji: "🍜" },
+  { id: "sushi",     label: "壽司・生魚片",   emoji: "🍣" },
+  { id: "korean",    label: "韓式",           emoji: "🇰🇷" },
+  { id: "hotpot",    label: "火鍋",           emoji: "🍲" },
+  { id: "bbq",       label: "燒肉・燒烤",     emoji: "🥩" },
+  { id: "taiwanese", label: "熱炒・台菜",     emoji: "🥘" },
+  { id: "sichuan",   label: "川菜・麻辣",     emoji: "🌶️" },
+  { id: "canto",     label: "港式・粵菜",     emoji: "🥟" },
+  { id: "italian",   label: "義式・西餐",     emoji: "🍝" },
+  { id: "american",  label: "美式・牛排",     emoji: "🍔" },
+  { id: "thai",      label: "泰式・南洋",     emoji: "🍤" },
+  { id: "izakaya",   label: "居酒屋・小酌",   emoji: "🍶" },
+  { id: "brunch",    label: "早午餐・輕食",   emoji: "🥐" },
+  { id: "veggie",    label: "素食・蔬食",     emoji: "🥗" },
+  { id: "noodle",    label: "小吃・麵食",     emoji: "🍚" },
+  { id: "buffet",    label: "吃到飽・自助餐", emoji: "🍽️" }
+];
+
+/** 連鎖品牌：一個品牌 × 多個捷運站 */
+const CHAINS = [
+  // 火鍋
+  { name:"海底撈火鍋", type:"hotpot", price:800, note:"服務誇張、客製湯底，人多聊天很適合", book:true,
+    stations:["台北101/世貿","忠孝復興","西門","板橋","南港展覽館","中山"] },
+  { name:"築間幸福鍋物", type:"hotpot", price:450, note:"平價個人鍋，肉品可加購，等位快", book:true,
+    stations:["忠孝復興","公館","板橋","市政府","中山","景安","南港"] },
+  { name:"這一鍋皇室秘藏鍋物", type:"hotpot", price:900, note:"擺盤華麗、適合有點儀式感的聚餐", book:true,
+    stations:["台北101/世貿","板橋","中山","市政府"] },
+  { name:"石二鍋", type:"hotpot", price:280, note:"最沒有壓力的個人鍋，隨到隨吃", book:false,
+    stations:["西門","公館","忠孝敦化","板橋","士林","南京復興","永安市場","江子翠"] },
+  { name:"錢都日式涮涮鍋", type:"hotpot", price:250, note:"銅板價個人鍋，宵夜時段也開", book:false,
+    stations:["公館","景美","板橋","三重","蘆洲","士林"] },
+  { name:"老四川巴蜀麻辣燙", type:"hotpot", price:900, note:"老字號麻辣鍋，鴨血豆腐吃到飽", book:true,
+    stations:["忠孝復興","板橋","中山","市政府"] },
+  { name:"涮乃葉 syabu-yo", type:"hotpot", price:650, note:"日式涮涮鍋吃到飽，蔬菜吧很齊", book:true,
+    stations:["台北101/世貿","板橋","中山","南港"] },
+
+  // 燒肉
+  { name:"乾杯燒肉居酒屋", type:"bbq", price:900, note:"氣氛熱鬧，經典乾杯儀式", book:true,
+    stations:["忠孝復興","市政府","中山","板橋","公館"] },
+  { name:"原燒優質燒肉", type:"bbq", price:750, note:"套餐制不用點菜、附湯附飲料", book:true,
+    stations:["忠孝復興","板橋","南京復興","市政府","士林"] },
+  { name:"燒肉LIKE", type:"bbq", price:400, note:"一人一爐，午餐時段快速解決", book:false,
+    stations:["西門","台北車站","板橋","中山"] },
+  { name:"胡同燒肉", type:"bbq", price:1200, note:"和牛品質高，訂位要早", book:true,
+    stations:["忠孝復興","中山","台北101/世貿"] },
+
+  // 日式
+  { name:"大戶屋", type:"japanese", price:400, note:"定食選擇多，一個人或一群人都自在", book:false,
+    stations:["忠孝復興","台北101/世貿","板橋","中山","市政府","公館","南港"] },
+  { name:"定食8", type:"japanese", price:300, note:"平價日式定食，白飯味噌湯續加", book:false,
+    stations:["公館","西門","士林","板橋","忠孝敦化"] },
+  { name:"勝博殿日式豬排", type:"japanese", price:420, note:"炸豬排本體很穩，高麗菜無限續", book:false,
+    stations:["台北車站","板橋","市政府","台北101/世貿","中山"] },
+  { name:"丸龜製麵", type:"japanese", price:250, note:"現做烏龍麵，配天婦羅很划算", book:false,
+    stations:["台北車站","西門","板橋","忠孝復興","市政府","士林"] },
+  { name:"吉野家", type:"japanese", price:180, note:"牛丼快速方便，預算緊時的保底選項", book:false,
+    stations:["台北車站","西門","公館","板橋","士林","忠孝復興"] },
+
+  // 拉麵
+  { name:"一風堂拉麵", type:"ramen", price:400, note:"豚骨湯頭經典，白丸黑丸各有擁護者", book:false,
+    stations:["台北車站","忠孝復興","板橋","中山"] },
+  { name:"花月嵐拉麵", type:"ramen", price:350, note:"招牌嗆蒜拉麵，重口味首選", book:false,
+    stations:["西門","公館","板橋","市政府","中山"] },
+  { name:"屯京拉麵", type:"ramen", price:420, note:"魚介豚骨雙湯頭，麵條偏粗有嚼勁", book:false,
+    stations:["忠孝復興","中山","台北101/世貿"] },
+
+  // 壽司
+  { name:"藏壽司 Kura Sushi", type:"sushi", price:350, note:"五盤抽一次扭蛋，帶朋友來很好玩", book:false,
+    stations:["西門","忠孝復興","板橋","士林","市政府","中山","南港"] },
+  { name:"壽司郎 Sushiro", type:"sushi", price:400, note:"CP 值高，尖峰要先線上取號", book:false,
+    stations:["板橋","中山","市政府","公館","南港展覽館"] },
+  { name:"爭鮮迴轉壽司", type:"sushi", price:200, note:"銅板價，臨時想吃就有位子", book:false,
+    stations:["西門","台北車站","公館","板橋","士林","忠孝敦化","三重"] },
+
+  // 韓式
+  { name:"涓豆腐", type:"korean", price:550, note:"豆腐鍋辣度可選，附小菜", book:true,
+    stations:["台北101/世貿","板橋","中山","市政府"] },
+  { name:"兩班家韓式碳烤", type:"korean", price:600, note:"烤肉加小菜吃到飽，適合放開吃", book:true,
+    stations:["忠孝復興","板橋","中山"] },
+  { name:"bb.q CHICKEN", type:"korean", price:450, note:"韓式炸雞配啤酒，外帶也方便", book:false,
+    stations:["西門","中山","忠孝復興","板橋"] },
+
+  // 川菜
+  { name:"開飯川食堂", type:"sichuan", price:550, note:"川菜做得下飯，人多合菜剛好", book:true,
+    stations:["市政府","板橋","中山","忠孝復興","南港"] },
+
+  // 港式
+  { name:"添好運", type:"canto", price:400, note:"酥皮焗叉燒包必點，翻桌快", book:false,
+    stations:["忠孝復興","板橋","市政府","台北車站"] },
+  { name:"點點心", type:"canto", price:400, note:"港式點心單點制，兩個人也能吃很多樣", book:false,
+    stations:["中山","西門","板橋"] },
+
+  // 義式西餐
+  { name:"薩莉亞 Saizeriya", type:"italian", price:250, note:"便宜到不可思議，學生時代的回憶", book:false,
+    stations:["西門","板橋","中山","公館","士林","忠孝復興"] },
+  { name:"洋城義大利餐廳", type:"italian", price:600, note:"份量大、適合分食，聚餐好點菜", book:true,
+    stations:["市政府","板橋","中山","台北101/世貿"] },
+
+  // 美式
+  { name:"樂子 the Diner", type:"american", price:480, note:"美式早午餐加漢堡，份量很誠實", book:true,
+    stations:["忠孝復興","大安","中山","市政府"] },
+  { name:"我家牛排", type:"american", price:300, note:"平價牛排附自助吧，吃粗飽首選", book:false,
+    stations:["板橋","三重","士林","公館","南勢角"] },
+  { name:"孫東寶台式牛排", type:"american", price:250, note:"台式鐵板牛排，濃湯麵包無限", book:false,
+    stations:["西門","板橋","公館","士林","三重"] },
+
+  // 泰式
+  { name:"瓦城泰國料理", type:"thai", price:650, note:"月亮蝦餅打拋豬，聚餐點菜不會出錯", book:true,
+    stations:["忠孝復興","台北101/世貿","板橋","中山","市政府","南港"] },
+  { name:"非常泰概念餐坊", type:"thai", price:600, note:"裝潢有氣氛，適合慶生", book:true,
+    stations:["忠孝復興","中山"] },
+
+  // 居酒屋
+  { name:"鳥貴族", type:"izakaya", price:400, note:"均一價串燒，喝酒聊天很輕鬆", book:false,
+    stations:["中山","西門","忠孝復興"] },
+  { name:"燒鳥串道", type:"izakaya", price:450, note:"深夜也開，下班後續攤好去處", book:false,
+    stations:["中山","公館","忠孝敦化","板橋"] },
+
+  // 早午餐
+  { name:"貳樓 Second Floor", type:"brunch", price:480, note:"全天候早午餐，寵物友善", book:true,
+    stations:["忠孝復興","公館","板橋","中山","大安"] },
+  { name:"早安美芝城", type:"brunch", price:100, note:"最平價的選項，趕時間時很好用", book:false,
+    stations:["公館","士林","板橋","三重","景美","永安市場"] },
+
+  // 素食
+  { name:"舒果新米蘭蔬食", type:"veggie", price:500, note:"蔬食做成西式套餐，葷食者也吃得慣", book:true,
+    stations:["市政府","板橋","中山","台北101/世貿"] },
+  { name:"寬心園精緻蔬食", type:"veggie", price:550, note:"精緻中式蔬食，帶長輩合適", book:true,
+    stations:["市政府","板橋","南京復興"] },
+
+  // 小吃麵食
+  { name:"鼎泰豐", type:"noodle", price:600, note:"小籠包國際知名，尖峰排隊要有心理準備", book:false,
+    stations:["東門","台北101/世貿","忠孝復興","板橋","中山"] },
+  { name:"三商巧福", type:"noodle", price:180, note:"牛肉麵連鎖，隨處可見不用想", book:false,
+    stations:["台北車站","西門","公館","板橋","士林","三重"] },
+  { name:"八方雲集", type:"noodle", price:130, note:"鍋貼酸辣湯，最沒有負擔的一餐", book:false,
+    stations:["公館","西門","板橋","士林","三重","景美","忠孝新生"] },
+
+  // 吃到飽
+  { name:"饗食天堂", type:"buffet", price:1200, note:"經典自助餐，慶祝場合的安全牌", book:true,
+    stations:["台北101/世貿","板橋","中山","忠孝復興"] },
+  { name:"漢來海港自助餐廳", type:"buffet", price:1300, note:"海鮮強項，生蠔螃蟹吃到飽", book:true,
+    stations:["台北車站","台北101/世貿","南港展覽館"] }
+];
+
+/** 單店：直接指定捷運站 */
+const INDIE = [
+  { name:"詹記麻辣火鍋", type:"hotpot", price:900, station:"中山國小", note:"復古裝潢，訂位一位難求", book:true },
+  { name:"太和殿麻辣鍋", type:"hotpot", price:1000, station:"信義安和", note:"老字號麻辣鍋，湯頭厚實", book:true },
+  { name:"Solo Pasta", type:"italian", price:650, station:"忠孝復興", note:"義大利麵做得很正統，訂位建議提前", book:true },
+  { name:"Osteria by Angie", type:"italian", price:900, station:"忠孝復興", note:"手工麵food，約會或慶祝很合適", book:true },
+  { name:"欣葉台菜創始店", type:"taiwanese", price:750, station:"雙連", note:"經典台菜，帶長輩或外國朋友都體面", book:true },
+  { name:"青葉台灣料理", type:"taiwanese", price:700, station:"中山", note:"老台菜館，菜脯蛋與雞捲是招牌", book:true },
+  { name:"梅子餐廳", type:"taiwanese", price:650, station:"雙連", note:"台式熱炒與海鮮，適合人多合菜", book:true },
+  { name:"好記擔仔麵", type:"taiwanese", price:550, station:"行天宮", note:"菜色鋪滿門口，指著點就對了", book:false },
+  { name:"雙月食品社", type:"taiwanese", price:350, station:"善導寺", note:"台式雞湯與麻油麵線，清爽不油膩", book:false },
+  { name:"上引水產", type:"sushi", price:900, station:"中山國中", note:"立食生魚片超新鮮，也能買回家煮", book:false },
+  { name:"三味食堂", type:"sushi", price:600, station:"龍山寺", note:"巨無霸鮭魚握壽司，排隊名店", book:false },
+  { name:"一蘭拉麵", type:"ramen", price:500, station:"中山", note:"隔板獨食，湯頭濃度可以自己調", book:false },
+  { name:"樂麵屋", type:"ramen", price:380, station:"忠孝敦化", note:"客製化麵條軟硬與湯頭濃淡", book:false },
+  { name:"鷹流東京醬油拉麵", type:"ramen", price:400, station:"松江南京", note:"醬油湯頭清爽，叉燒表現好", book:false },
+  { name:"山頭火拉麵", type:"ramen", price:400, station:"台北車站", note:"北海道系豚骨，鹽味拉麵值得試", book:false },
+  { name:"韓姜熙的小廚房", type:"korean", price:650, station:"忠孝復興", note:"韓式家常菜，小菜續加不手軟", book:true },
+  { name:"豬對有韓式烤肉", type:"korean", price:550, station:"忠孝敦化", note:"厚切五花，店員代烤不用自己顧", book:true },
+  { name:"NARA Thai Cuisine", type:"thai", price:700, station:"台北101/世貿", note:"泰國本地評鑑常勝軍，酸辣夠味", book:true },
+  { name:"泰市場 Spice Market", type:"thai", price:1100, station:"台北101/世貿", note:"泰式海鮮自助餐，慶祝場合很有面子", book:true },
+  { name:"誠記越南麵食館", type:"thai", price:300, station:"東門", note:"生牛肉河粉老店，湯頭清甜", book:false },
+  { name:"珍寶海鮮", type:"thai", price:1000, station:"台北101/世貿", note:"新加坡辣椒螃蟹，配饅頭很涮嘴", book:true },
+  { name:"林東芳牛肉麵", type:"noodle", price:280, station:"忠孝新生", note:"湯頭與辣椒醬是靈魂，宵夜也開", book:false },
+  { name:"永康牛肉麵", type:"noodle", price:330, station:"東門", note:"紅燒牛肉麵老店，觀光客與在地人都愛", book:false },
+  { name:"廖家牛肉麵", type:"noodle", price:300, station:"東門", note:"清燉紅燒都有水準，小菜也好", book:false },
+  { name:"金峰魯肉飯", type:"noodle", price:180, station:"中正紀念堂", note:"魯肉飯配排骨酥湯，銅板價經典", book:false },
+  { name:"阜杭豆漿", type:"brunch", price:120, station:"善導寺", note:"厚燒餅加蛋，要早起排隊", book:false },
+  { name:"天天利美食坊", type:"noodle", price:150, station:"西門", note:"半熟蛋滷肉飯，西門町必吃", book:false },
+  { name:"阿宗麵線", type:"noodle", price:90, station:"西門", note:"站著吃的大腸麵線，續攤前墊胃剛好", book:false },
+  { name:"富霸王豬腳", type:"noodle", price:280, station:"行天宮", note:"燉到入口即化的豬腳，配滷肉飯", book:false },
+  { name:"度小月擔仔麵", type:"noodle", price:350, station:"中山", note:"台南擔仔麵北上版，小點多樣", book:false },
+  { name:"興波咖啡 Simple Kaffa", type:"brunch", price:350, station:"忠孝新生", note:"世界冠軍咖啡，甜點也有水準", book:false },
+  { name:"好初早餐", type:"brunch", price:220, station:"江子翠", note:"板橋人氣早午餐，蛋餅系列很強", book:false },
+  { name:"Ooh Cha Cha 自然食", type:"veggie", price:350, station:"古亭", note:"純素也吃得滿足，沙拉碗份量足", book:false },
+  { name:"果然匯蔬食百匯", type:"veggie", price:750, station:"台北101/世貿", note:"蔬食吃到飽，選擇比想像中多", book:true },
+  { name:"Ed's Diner", type:"american", price:550, station:"忠孝敦化", note:"美式煙燻烤肉，配啤酒很對", book:true },
+  { name:"KUA `AINA 夏威夷漢堡", type:"american", price:450, station:"台北101/世貿", note:"酪梨漢堡是招牌，份量偏大", book:false },
+  { name:"TGI FRIDAYS", type:"american", price:750, station:"台北101/世貿", note:"美式連鎖，慶生氣氛做得足", book:true },
+  { name:"添好運（板橋大遠百）", type:"canto", price:400, station:"板橋", note:"逛街順道吃，翻桌率高", book:false },
+  { name:"港點大師", type:"canto", price:450, station:"台北101/世貿", note:"港點單點制，兩人也能吃到多樣", book:false },
+  { name:"天府川菜", type:"sichuan", price:600, station:"南京復興", note:"道地川味，怕辣要先講", book:true },
+  { name:"川外川", type:"sichuan", price:550, station:"市政府", note:"水煮牛與口水雞穩定，適合合菜", book:true },
+  { name:"饗饗 INPARADISE", type:"buffet", price:1600, station:"忠孝復興", note:"高檔自助餐，重要日子的選擇", book:true },
+  { name:"點爭鮮（微風南山）", type:"sushi", price:300, station:"台北101/世貿", note:"點餐送到桌，不用等迴轉盤", book:false },
+  { name:"銀兔湯咖哩", type:"japanese", price:450, station:"忠孝復興", note:"北海道湯咖哩，辣度與配料可選", book:false },
+  { name:"金子半之助", type:"japanese", price:400, station:"台北車站", note:"江戶前天丼，醬汁很涮嘴", book:false },
+  { name:"大心新泰式麵食", type:"thai", price:350, station:"市政府", note:"泰式湯麵，辣度可調，一人也自在", book:false },
+  { name:"六張犁老賊魯肉飯", type:"noodle", price:160, station:"六張犁", note:"在地人的日常，價格佛心", book:false },
+  { name:"公館夜市小吃", type:"noodle", price:200, station:"公館", note:"整條街隨便挑，學生價位", book:false },
+  { name:"寧夏夜市", type:"noodle", price:250, station:"雙連", note:"小吃密度高，邊走邊吃最省事", book:false },
+  { name:"饒河街觀光夜市", type:"noodle", price:250, station:"松山", note:"胡椒餅與藥燉排骨，捷運站出口就到", book:false },
+  { name:"晴光市場美食", type:"noodle", price:220, station:"中山國小", note:"在地老市場，牛雜湯與泰式小吃都有", book:false }
+];
+
+
+/**
+ * 平價小吃專區
+ *
+ * OSM 撈得到店，但撈不到價位 —— 而「便宜」正是小吃最重要的資訊。
+ * 所以這一區是人工整理的，每一筆都有實際的人均價位。
+ *
+ * 選店偏向兩種：一是各站的夜市／傳統市場（一定存在、也一定便宜），
+ * 二是有名字的老店。刻意往外圍站別鋪，因為平價小吃本來就不在市中心。
+ */
+const CHEAP_EATS = [
+  // ── 夜市與傳統市場（整區覓食，最不會出錯的平價選項）──
+  { name:"士林夜市", type:"noodle", price:250, station:"劍潭", note:"規模最大的夜市，從劍潭站 1 號出口過馬路就到", book:false },
+  { name:"寧夏夜市", type:"noodle", price:220, station:"雙連", note:"小吃密度高，走一圈就飽，適合邊走邊分食", book:false },
+  { name:"饒河街觀光夜市", type:"noodle", price:230, station:"松山", note:"胡椒餅與藥燉排骨，捷運站出口直接接夜市口", book:false },
+  { name:"華西街夜市", type:"noodle", price:220, station:"龍山寺", note:"老派台北味，蛇肉店已少但小吃仍在", book:false },
+  { name:"公館夜市", type:"noodle", price:200, station:"公館", note:"學生價位，整條街隨便挑都不會太貴", book:false },
+  { name:"師大夜市", type:"noodle", price:200, station:"古亭", note:"從古亭站走約 8 分鐘，異國小吃比例高", book:false },
+  { name:"通化街夜市", type:"noodle", price:230, station:"信義安和", note:"又叫臨江街夜市，在地人比觀光客多", book:false },
+  { name:"遼寧街夜市", type:"noodle", price:250, station:"南京復興", note:"規模小但都是熟客店，宵夜時段最熱鬧", book:false },
+  { name:"景美夜市", type:"noodle", price:200, station:"景美", note:"出站就到，蒸餃與生煎包是招牌", book:false },
+  { name:"樂華夜市", type:"noodle", price:200, station:"頂溪", note:"永和最大夜市，走路 5 分鐘", book:false },
+  { name:"興南夜市", type:"noodle", price:190, station:"南勢角", note:"中和在地夜市，價位比台北市低一截", book:false },
+  { name:"華新街(緬甸街)", type:"thai", price:180, station:"南勢角", note:"緬甸與雲南小吃聚落，魚湯麵與烤餅很值得", book:false },
+  { name:"三和夜市", type:"noodle", price:190, station:"三和國中", note:"三重在地夜市，銅板價選擇多", book:false },
+  { name:"湳雅夜市", type:"noodle", price:200, station:"板橋", note:"板橋人的宵夜場，攤位密集", book:false },
+  { name:"黃石市場", type:"noodle", price:160, station:"府中", note:"板橋老市場，白天就開，肉圓與臭豆腐有名", book:false },
+  { name:"新莊廟街夜市", type:"noodle", price:190, station:"新莊", note:"廟口小吃聚落，走路 5 分鐘", book:false },
+  { name:"蘆洲廟口小吃", type:"noodle", price:180, station:"蘆洲", note:"切仔麵與黑白切的大本營", book:false },
+  { name:"延三夜市", type:"noodle", price:200, station:"大橋頭", note:"老台北小吃聚落，米粉湯與滷味攤多", book:false },
+  { name:"南門市場", type:"noodle", price:180, station:"中正紀念堂", note:"傳統市場熟食區，江浙點心與滷味", book:false },
+  { name:"北投市場", type:"noodle", price:150, station:"北投", note:"在地人的早午餐場，滷肉飯與麵攤便宜", book:false },
+  { name:"淡水老街小吃", type:"noodle", price:200, station:"淡水", note:"阿給、魚丸、鐵蛋，順便看夕陽", book:false },
+  { name:"虎林街夜市", type:"noodle", price:190, station:"永春", note:"純在地夜市，沒什麼觀光客", book:false },
+  { name:"晴光市場美食", type:"noodle", price:200, station:"中山國小", note:"老市場，牛雜湯與泰式小吃都有", book:false },
+
+  // ── 麵食與飯類老店 ──
+  { name:"賣麵炎仔", type:"noodle", price:160, station:"大橋頭", note:"百年切仔麵，紅燒肉必點，中午前常賣完", book:false },
+  { name:"今大魯肉飯", type:"noodle", price:130, station:"菜寮", note:"三重排隊名店，魯肉飯配油豆腐", book:false },
+  { name:"矮仔財滷肉飯", type:"noodle", price:120, station:"北投", note:"北投市場裡的排隊店，滷肉肥瘦適中", book:false },
+  { name:"老牌牛肉拉麵大王", type:"noodle", price:180, station:"西門", note:"西門町老店，手工拉麵份量大", book:false },
+  { name:"鴨肉扁", type:"noodle", price:160, station:"西門", note:"其實是鵝肉，切盤配麵是標準吃法", book:false },
+  { name:"兩喜號魷魚羹", type:"noodle", price:100, station:"龍山寺", note:"百年老店，羹湯甜而不膩", book:false },
+  { name:"周記傳統肉粥", type:"noodle", price:110, station:"龍山寺", note:"肉粥配紅燒肉，早上就開", book:false },
+  { name:"藍家割包", type:"noodle", price:80, station:"公館", note:"割包選肥瘦，配四神湯剛好", book:false },
+  { name:"雄記蔥抓餅", type:"noodle", price:60, station:"公館", note:"現桿現煎，加蛋加起司都便宜", book:false },
+  { name:"上豪蒸餃", type:"noodle", price:130, station:"景美", note:"景美夜市名店，蒸餃皮薄餡多", book:false },
+  { name:"阿財鍋貼水餃", type:"noodle", price:130, station:"南京復興", note:"鍋貼底部煎得很脆，配酸辣湯", book:false },
+  { name:"許記生煎包", type:"noodle", price:60, station:"古亭", note:"師大商圈老攤，一顆銅板價", book:false },
+  { name:"東門餃子館", type:"noodle", price:250, station:"東門", note:"老北方麵食，牛肉捲餅與酸辣湯", book:false },
+  { name:"大橋頭老牌筒仔米糕", type:"noodle", price:100, station:"大橋頭", note:"米糕配四神湯，傳統早午餐吃法", book:false },
+  { name:"東發號油飯", type:"noodle", price:100, station:"松山", note:"饒河夜市口，油飯與魷魚焿", book:false },
+  { name:"頂級甜不辣", type:"noodle", price:80, station:"龍山寺", note:"甜不辣配特調醬，湯可以續", book:false },
+  { name:"老天祿滷味", type:"noodle", price:180, station:"西門", note:"鴨舌與豆干，外帶當宵夜", book:false },
+  { name:"燈籠滷味", type:"noodle", price:170, station:"古亭", note:"自己夾的滷味，師大商圈老字號", book:false },
+  { name:"好朋友涼麵", type:"noodle", price:90, station:"士林", note:"24 小時營業，宵夜或早餐都行", book:false },
+  { name:"世界豆漿大王", type:"brunch", price:110, station:"頂溪", note:"24 小時中式早餐，永和豆漿的源頭", book:false },
+  { name:"雙連圓仔湯", type:"noodle", price:90, station:"雙連", note:"燒麻糬與圓仔湯，寧夏夜市旁的甜點收尾", book:false },
+  { name:"江記東門豆花", type:"noodle", price:70, station:"東門", note:"傳統豆花，永康商圈吃完的甜點", book:false },
+  { name:"台一牛奶大王", type:"brunch", price:100, station:"公館", note:"紅豆牛奶冰與燒麻糬，台大學生的回憶", book:false },
+  { name:"三元號魯肉飯", type:"noodle", price:140, station:"雙連", note:"寧夏夜市老店，魯肉飯與魚翅羹", book:false },
+  { name:"陳董藥燉排骨", type:"noodle", price:150, station:"松山", note:"饒河夜市排隊店，冬天喝特別暖", book:false },
+  { name:"永和四海豆漿", type:"brunch", price:100, station:"永安市場", note:"燒餅油條蛋餅，中式早餐標配", book:false },
+  { name:"施家鮮肉湯圓", type:"noodle", price:110, station:"善導寺", note:"華山市場名攤，鹹湯圓配餛飩", book:false },
+  { name:"祥記純糖麻糬", type:"noodle", price:70, station:"龍山寺", note:"花生粉麻糬與杏仁露，飯後甜點", book:false },
+  { name:"雙城街夜市", type:"noodle", price:190, station:"中山國小", note:"晴光市場旁，白天晚上都有攤", book:false },
+  { name:"永樂市場小吃", type:"noodle", price:150, station:"北門", note:"迪化街旁，米粉湯與旗魚米粉", book:false },
+  { name:"後山埤市場", type:"noodle", price:150, station:"後山埤", note:"傳統市場熟食區，滷味與麵線", book:false },
+];
+
+/* ---------- 展開成統一格式 ---------- */
+/*
+ * 地圖與查詢連結都用「搜尋」而不是寫死網址，所以不會有連結失效的問題。
+ * 關鍵字刻意放寬成「店名 站名」而不是「店名 捷運X站」——
+ * 加上「捷運」「站」會把查詢綁太死，萬一店搬家或資料有誤就整個查不到東西。
+ */
+function mapUrl(name, station){
+  return "https://www.google.com/maps/search/?api=1&query=" +
+         encodeURIComponent(name + " " + station);
+}
+function bookUrl(name, station){
+  return "https://www.google.com/search?q=" +
+         encodeURIComponent(name + " " + station + " 訂位");
+}
+function menuUrl(name, station){
+  return "https://www.google.com/search?q=" +
+         encodeURIComponent(name + " " + station + " 菜單");
+}
+
+/**
+ * 讀入 OSM 匯入的資料（如果有的話）。
+ * 跑過 `node tools/import-osm.js` 才會有這個檔案，沒有就只用上面的精選清單。
+ *
+ * 寫成這樣是因為這支檔案也會被 build-preview.js 打包進瀏覽器，
+ * 那邊沒有 fs，所以要能安全地退回空陣列。
+ */
+var _req = typeof require === "function" ? require : null;
+
+function loadOsm(){
+  // 預覽版：由 build-preview.js 事先把資料掛在 globalThis 上
+  if(typeof globalThis !== "undefined" && globalThis.__OSM_DATA__){
+    return globalThis.__OSM_DATA__.restaurants || [];
+  }
+  if(!_req) return [];
+  try{
+    const fs = _req("fs"), path = _req("path");
+    const f = path.join(__dirname, "osm-restaurants.json");
+    if(!fs.existsSync(f)) return [];
+    const j = JSON.parse(fs.readFileSync(f, "utf8"));
+    return j.restaurants || [];
+  }catch(e){
+    console.warn("[restaurants] 讀取 osm-restaurants.json 失敗：" + e.message);
+    return [];
+  }
+}
+
+function build(){
+  const out = [];
+  const seen = new Set();
+  let n = 0;
+
+  // 先把 OSM 資料建成索引。精選清單裡的店如果 OSM 也有，
+  // 就把「離車站幾公尺」繼承過來 —— 那是從實際座標算的，比人工估準。
+  const osmList = loadOsm();
+  const osmByKey = new Map();
+  osmList.forEach(function(r){ osmByKey.set(r.name + "@" + r.station, r); });
+
+  function push(r){
+    const key = r.name + "@" + r.station;
+    if(seen.has(key)) return;          // 精選清單優先，OSM 重複的就跳過
+    seen.add(key);
+    const hit = osmByKey.get(key);
+    out.push(Object.assign({ id: "r" + (++n) }, r, {
+      dist: r.dist != null ? r.dist : (hit ? hit.dist : null),
+      mapUrl: mapUrl(r.name, r.station),
+      bookUrl: bookUrl(r.name, r.station),
+      menuUrl: menuUrl(r.name, r.station)
+    }));
+  }
+
+  CHAINS.forEach(function(c){
+    c.stations.forEach(function(st){
+      push({ name: c.name, type: c.type, price: c.price, station: st,
+             note: c.note, chain: true, book: !!c.book, source: "curated" });
+    });
+  });
+
+  INDIE.forEach(function(r){
+    push({ name: r.name, type: r.type, price: r.price, station: r.station,
+           note: r.note, chain: false, book: !!r.book, source: "curated" });
+  });
+
+  CHEAP_EATS.forEach(function(r){
+    push({ name: r.name, type: r.type, price: r.price, station: r.station,
+           note: r.note, chain: false, book: false, source: "curated" });
+  });
+
+  const curatedCount = out.length;
+
+  osmList.forEach(function(r){
+    if(!TYPES.some(function(t){ return t.id === r.type; })) return;
+    push({ name: r.name, type: r.type, price: r.price || null, station: r.station,
+           dist: r.dist, note: r.note, chain: !!r.chain, book: false, source: "osm" });
+  });
+
+  if(out.length > curatedCount){
+    console.log("[restaurants] 精選 " + curatedCount + " 筆 + OSM " +
+                (out.length - curatedCount) + " 筆 = 共 " + out.length + " 筆");
+  }
+
+  return out;
+}
+
+const RESTAURANTS = build();
+
+return { TYPES: TYPES, RESTAURANTS: RESTAURANTS };
+})();
+var ENGINE = (function(){
+  var mrt = MRT;
+  var RESTAURANTS = DB.RESTAURANTS, TYPES = DB.TYPES;
+
+
+const TYPE_MAP = {};
+TYPES.forEach(function(t){ TYPE_MAP[t.id] = t; });
+
+/**
+ * 對單一餐廳，逐一評估每位成員是否吃得到。
+ * 回傳每個人的站數、換乘、是否超出可接受站數、是不是他想吃的類型。
+ */
+function evaluate(restaurant, members){
+  const per = members.map(function(m){
+    const d = mrt.distance(m.station, restaurant.station);
+    const stations = d ? d.stations : null;
+    const transfers = d ? d.transfers : null;
+    const okDist = stations !== null && stations <= m.maxStations;
+    const okType = Array.isArray(m.types) && m.types.indexOf(restaurant.type) >= 0;
+    return {
+      memberId: m.id, name: m.name,
+      stations: stations, transfers: transfers,
+      okDist: okDist, okType: okType,
+      over: stations === null ? null : Math.max(0, stations - m.maxStations)
+    };
+  });
+
+  const dists = per.map(function(p){ return p.stations === null ? 999 : p.stations; });
+  return {
+    per: per,
+    nDist:   per.filter(function(p){ return p.okDist; }).length,
+    nType:   per.filter(function(p){ return p.okType; }).length,
+    nAll:    per.filter(function(p){ return p.okDist; }).length,
+    maxStations: Math.max.apply(null, dists),
+    avgStations: dists.reduce(function(a,b){ return a+b; }, 0) / dists.length,
+    totalStations: dists.reduce(function(a,b){ return a+b; }, 0)
+  };
+}
+
+/** 同一個品牌只留最好的那家分店 */
+function dedupeByName(list){
+  const seen = new Set();
+  return list.filter(function(x){
+    if(seen.has(x.restaurant.name)) return false;
+    seen.add(x.restaurant.name);
+    return true;
+  });
+}
+
+/**
+ * 共識區的挑選：照排序走一遍，同時遵守「每種類型最多幾家」與「每一站最多幾家」，
+ * 直到湊滿想要的數量為止。
+ *
+ * 不用「先 cap 類型再 cap 車站」串接，是因為那樣兩層會互相削減 —— 
+ * 第一層留下的剛好集中在同一站，第二層砍完就湊不滿數量了。
+ * 一次走完並邊走邊檢查，才能既分散又補滿。
+ */
+function pickDiverse(list, want, perType, perStation){
+  const byType = {}, byStation = {};
+  const out = [];
+  for(let i = 0; i < list.length && out.length < want; i++){
+    const x = list[i];
+    const t = x.restaurant.type, st = x.restaurant.station;
+    if((byType[t] || 0) >= perType) continue;
+    if((byStation[st] || 0) >= perStation) continue;
+    byType[t] = (byType[t] || 0) + 1;
+    byStation[st] = (byStation[st] || 0) + 1;
+    out.push(x);
+  }
+  return out;
+}
+
+/**
+ * 排序原則（依序）：
+ *  1. 幾個人在可接受的站數內 —— 多數決
+ *  2. 走最遠的那個人要走幾站 —— 公平性，不要有人特別犧牲
+ *  3. 全體平均站數
+ *  4. 個人小店優先於連鎖店 —— 不然畫面上永遠是那幾個連鎖品牌
+ *  5. 精選清單優先於 OSM —— 精選的有價位、特色說明與訂位提示，資訊完整得多
+ *  6. 有寫價位的優先於沒寫的
+ */
+function rank(a, b){
+  if(b.ev.nAll !== a.ev.nAll) return b.ev.nAll - a.ev.nAll;
+  if(a.ev.maxStations !== b.ev.maxStations) return a.ev.maxStations - b.ev.maxStations;
+
+  // 平均站數取整數再比。差 0.3 站在現實中感覺不出來，
+  // 不該讓這種差距壓過「個人小店優先」——不然連鎖品牌分店多，
+  // 總有一家剛好近一點點，畫面上就永遠是那幾個連鎖。
+  const aAvg = Math.round(a.ev.avgStations), bAvg = Math.round(b.ev.avgStations);
+  if(aAvg !== bAvg) return aAvg - bAvg;
+
+  const ac = a.restaurant.chain ? 1 : 0, bc = b.restaurant.chain ? 1 : 0;
+  if(ac !== bc) return ac - bc;
+
+  const as = a.restaurant.source === "curated" ? 0 : 1;
+  const bs = b.restaurant.source === "curated" ? 0 : 1;
+  if(as !== bs) return as - bs;
+
+  if(a.ev.avgStations !== b.ev.avgStations) return a.ev.avgStations - b.ev.avgStations;
+  const ap = a.restaurant.price ? 0 : 1, bp = b.restaurant.price ? 0 : 1;
+  if(ap !== bp) return ap - bp;
+  return (a.restaurant.price || 9999) - (b.restaurant.price || 9999);
+}
+
+function recommend(members){
+  if(!members.length) return { consensus: [], byType: [], warnings: [], noOverlap: false };
+
+  const n = members.length;
+  const warnings = [];
+
+  const scored = RESTAURANTS.map(function(r){
+    return { restaurant: r, ev: evaluate(r, members) };
+  });
+
+  /* ---------- 1. 硬條件：所有人的站數都要符合 ---------- */
+  // 站數不符的直接不出現，不再「放寬讓某人多坐幾站」。
+  // 與其推薦一家有人到不了的店，不如老實說配不出來、請大家放寬條件。
+  const eligible = scored.filter(function(x){ return x.ev.nAll === n; });
+
+  if(!eligible.length){
+    // 找出是誰卡住的，講清楚比只說「找不到」有用
+    const tight = members.slice().sort(function(a, b){ return a.maxStations - b.maxStations; })[0];
+    warnings.push("在「每個人都到得了」的條件下配不出任何餐廳。" +
+      "目前限制最緊的是 " + tight.name + "（" + tight.station + "站 " + tight.maxStations + " 站內），" +
+      "請至少一個人把可接受的站數放寬。");
+    return { consensus: [], byType: [], warnings: warnings, noOverlap: false };
+  }
+
+  /* ---------- 2. 統計每種類型有幾個人選 ---------- */
+  const typeVoters = {};
+  members.forEach(function(m){
+    (m.types || []).forEach(function(t){
+      if(!typeVoters[t]) typeVoters[t] = [];
+      typeVoters[t].push(m.name);
+    });
+  });
+
+  function decorate(x, t, bucket){
+    return Object.assign({}, x, {
+      bucket: bucket,
+      typeId: t,
+      typeLabel: TYPE_MAP[t] ? TYPE_MAP[t].label : t,
+      typeEmoji: TYPE_MAP[t] ? TYPE_MAP[t].emoji : "🍴",
+      voters: typeVoters[t]
+    });
+  }
+
+  /**
+   * 從某個類型裡挑最多 max 家。
+   * 這裡不限制「同一站只能一家」—— 同一站的兩家不同餐廳是兩個真實的選項，
+   * 為了分散而換成更遠的店反而本末倒置。
+   */
+  function pickForType(t, max){
+    const pool = eligible.filter(function(x){ return x.restaurant.type === t; });
+    if(!pool.length) return [];
+    return dedupeByName(pool.sort(rank)).slice(0, max);
+  }
+
+  /* ---------- 3. 共識區：兩個人以上都選的類型 ---------- */
+  // 只有一個人選的類型不放這裡，放到下面「每個人想吃的」。
+  const sharedTypes = Object.keys(typeVoters)
+    .filter(function(t){ return typeVoters[t].length >= 2; })
+    .sort(function(a, b){ return typeVoters[b].length - typeVoters[a].length; });
+
+  const consensus = [];
+  sharedTypes.forEach(function(t){
+    if(consensus.length >= 8) return;
+    const picked = pickForType(t, 2);
+    if(!picked.length){
+      warnings.push("「" + (TYPE_MAP[t] ? TYPE_MAP[t].label : t) + "」有 " + typeVoters[t].length +
+        " 個人想吃，但在大家都到得了的範圍內沒有這一類的店。");
+      return;
+    }
+    picked.forEach(function(x){ consensus.push(decorate(x, t, "consensus")); });
+  });
+
+  const noOverlap = sharedTypes.length === 0;
+  if(noOverlap){
+    warnings.push("大家想吃的類型完全沒有交集，所以沒有「最多人想吃」這一區。直接看下面每個人各自想吃的吧。");
+  }
+
+  /* ---------- 4. 每個人想吃的：只有一個人選的類型 ---------- */
+  const soloTypes = Object.keys(typeVoters).filter(function(t){ return typeVoters[t].length === 1; });
+
+  // 依「有幾種單人類型」決定每種給幾家，而不是看有幾個人 ——
+  // 真正會讓畫面爆掉的是類型數，三個人也可能各選三種不同的。
+  // 三種以內每種給兩家當備案，四種以上每種一家，卡片數就控制在 6 張上下。
+  const perSoloType = soloTypes.length <= 3 ? 2 : 1;
+
+  const byType = [];
+  soloTypes.forEach(function(t){
+    const picked = pickForType(t, perSoloType);
+    if(!picked.length){
+      warnings.push("「" + (TYPE_MAP[t] ? TYPE_MAP[t].label : t) + "」（" + typeVoters[t][0] +
+        " 想吃）在大家都到得了的範圍內找不到店。");
+      return;
+    }
+    picked.forEach(function(x){ byType.push(decorate(x, t, "type")); });
+  });
+
+  // 依成員填寫順序排，看起來比較像「一人一區」
+  const order = {};
+  members.forEach(function(m, i){ order[m.name] = i; });
+  byType.sort(function(a, b){
+    const ao = order[a.voters[0]], bo = order[b.voters[0]];
+    if(ao !== bo) return ao - bo;                       // 先照成員順序分群
+    if(a.typeId !== b.typeId) return a.typeId < b.typeId ? -1 : 1;  // 同一人的同類型排在一起
+    return rank(a, b);
+  });
+
+  // 隱藏彩蛋要從「大家都到得了、但沒被選進推薦」的店裡抽，所以留一批備用的
+  const usedIds = consensus.concat(byType).map(function(x){ return x.restaurant.id; });
+  const spare = eligible
+    .filter(function(x){ return usedIds.indexOf(x.restaurant.id) < 0; })
+    .sort(rank)
+    .slice(0, 50)
+    .map(function(x){
+      const t = x.restaurant.type;
+      return {
+        restaurant: x.restaurant,
+        typeLabel: TYPE_MAP[t] ? TYPE_MAP[t].label : t,
+        typeEmoji: TYPE_MAP[t] ? TYPE_MAP[t].emoji : "🍴"
+      };
+    });
+
+  return {
+    consensus: consensus, byType: byType, warnings: warnings, noOverlap: noOverlap, spare: spare,
+    // 讓前端直接用這個值寫文案，不要自己去推 —— 推錯就會出現「說兩家卻只給一家」
+    perSoloType: perSoloType,
+    soloTypeCount: soloTypes.length
+  };
+}
+
+return { recommend: recommend, evaluate: evaluate };
+})();
+var GAME = (function(){
+/**
+ * 角色抽籤與計票規則。
+ *
+ * 設計上的一個關鍵決定：投票改成「勾選 → 按送出」兩段式。
+ * 因為壞皇后要毒「後面一位投票的人」，而複選模式下如果勾一下就即時記錄，
+ * 根本沒有「這個人投完了」這個時間點可以定義先後順序。
+ * 有了送出這個動作，順序就是「按下送出的先後」，非同步也成立。
+ *
+ * 角色只有伺服器知道誰是誰。對外的房間資料永遠不含 roles，
+ * 成員只能拿自己的 secret 查自己的角色。
+ */
+
+const ROLES = {
+  king: {
+    id: "king", name: "國王", emoji: "👑",
+    power: "你這一票，每一家都算兩票。",
+    detail: "投票權重 ×2。你勾的每一家餐廳都會拿到 2 票。"
+  },
+  queen: {
+    id: "queen", name: "壞皇后", emoji: "🍎",
+    power: "下一個送出投票的人會被你毒啞，那一票不算數。",
+    detail: "你按下送出之後，接著第一個送出投票的人會被毒啞，他的票會作廢。如果你是最後一個送出的，技能就沒有效果。你不會知道會毒到誰。毒只讓對方的「票」不算數，如果毒到魔法師，他指定的交換照樣會發生。"
+  },
+  wizard: {
+    id: "wizard", name: "魔法師", emoji: "🧙",
+    power: "指定兩家餐廳，投票結束後它們的票數互換。",
+    detail: "送出投票時要同時指定兩家。交換在所有人都投完之後才發生，所以你現在並不知道那兩家各有幾票——這是盲選。就算你被壞皇后毒啞（自己那一票不算數），交換還是會發生。"
+  },
+  fool: {
+    id: "fool", name: "笨蛋", emoji: "🤡",
+    power: "你不能自己選，由轉盤決定你投給誰。",
+    detail: "輪到你投票時會跳出轉盤，系統隨機決定你投給哪一家，而且只會投到一家。"
+  },
+  commoner: {
+    id: "commoner", name: "平民", emoji: "🧑‍🌾",
+    power: "一票就是一票，沒有特殊能力。",
+    detail: "權重 ×1，不受任何技能影響。安穩過日子。"
+  }
+};
+
+/** 有特殊技能的四個角色，每場最多各出現一次 */
+const SPECIAL_ORDER = ["king", "queen", "wizard", "fool"];
+
+function shuffle(arr, rnd){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+/**
+ * 發角色。
+ *   5 人以上：四個特殊角色各一，其餘都是平民
+ *   5 人以下：從四個特殊角色裡隨機抽，抽到幾個算幾個（所以小場次角色組合每次都不同）
+ * 回傳 { memberId: roleId }
+ */
+function assignRoles(memberIds, rnd){
+  rnd = rnd || Math.random;
+  const specials = shuffle(SPECIAL_ORDER, rnd).slice(0, Math.min(memberIds.length, SPECIAL_ORDER.length));
+  const pool = specials.concat(
+    new Array(Math.max(0, memberIds.length - specials.length)).fill("commoner")
+  );
+  const shuffled = shuffle(pool, rnd);
+
+  const out = {};
+  memberIds.forEach(function(id, i){ out[id] = shuffled[i]; });
+  return out;
+}
+
+/* ---------- 隱藏彩蛋：今日主廚 ---------- */
+
+const ALIASES = ["神秘店家 X", "神秘店家 Y", "神秘店家 Z", "神秘店家 α", "神秘店家 Ω"];
+
+const TAGLINES = [
+  "吃過的人都不肯透露地址，怕排隊變長。",
+  "老闆脾氣很硬，但你會原諒他。",
+  "招牌小到會走過頭，走過頭的人後來都回來了。",
+  "菜單只有一面，因為不需要第二面。",
+  "據說有人為了它提早三站下車。",
+  "上菜速度很慢，慢到你開始期待。",
+  "沒有冷氣但有風扇，沒有裝潢但有味道。",
+  "老闆娘會問你吃不吃辣，答錯後果自負。",
+  "隔壁桌一直在講話，但你會專心吃自己的。",
+  "第一次來會覺得普通，第三次來會開始想念。",
+  "沒有menu照片，因為端上來比照片好看。",
+  "營業時間寫得很隨性，但該開的時候都會開。",
+  "座位很擠，擠到你跟隔壁桌變成朋友。",
+  "有人說它被高估了，那個人上週又去了。",
+  "湯可以續，但你續到第三碗店員會看你。",
+  "位置很偏，偏到只有在地人知道。",
+  "門口那條隊伍不是在等公車。",
+  "吃完會有一種「早知道就早點來」的悔恨。"
+];
+
+/**
+ * 從「大家都到得了、但沒被選進推薦名單」的餐廳裡抽一家當彩蛋。
+ * 刻意挑候選之外的，這樣它是額外的第 N+1 個選項，不會擠掉正常推薦。
+ */
+function pickMystery(eligible, usedIds, rnd){
+  rnd = rnd || Math.random;
+  const pool = eligible.filter(function(x){ return usedIds.indexOf(x.restaurant.id) < 0; });
+  if(!pool.length) return null;
+
+  const hit = pool[Math.floor(rnd() * pool.length)];
+  return {
+    restaurantId: hit.restaurant.id,
+    alias: ALIASES[Math.floor(rnd() * ALIASES.length)],
+    tagline: TAGLINES[Math.floor(rnd() * TAGLINES.length)],
+    typeLabel: hit.typeLabel || null,
+    typeEmoji: hit.typeEmoji || "🍴",
+    // 真實店家的完整資料。投票期間伺服器絕對不會把這個欄位吐出去，
+    // 只有 stage 進到 revealed 之後才隨結果一起公開。
+    entry: hit
+  };
+}
+
+/* ---------- 計票 ---------- */
+
+/**
+ * 依角色規則算出最終票數。
+ * @param ballots { memberId: { picks:[rid], poisoned:bool, swap:[ridA,ridB] } }
+ * @param roles   { memberId: roleId }
+ * @returns { totals:{rid:票數}, voters:{rid:[名字]}, swap:{a,b}|null, poisonedIds:[] }
+ */
+function tally(ballots, roles, nameOf){
+  const totals = {};
+  const voters = {};
+  const poisonedIds = [];
+
+  Object.keys(ballots || {}).forEach(function(mid){
+    const b = ballots[mid] || {};
+    if(b.poisoned){ poisonedIds.push(mid); return; }
+
+    const weight = roles[mid] === "king" ? 2 : 1;
+    (b.picks || []).forEach(function(rid){
+      totals[rid] = (totals[rid] || 0) + weight;
+      if(!voters[rid]) voters[rid] = [];
+      voters[rid].push(nameOf(mid));
+    });
+  });
+
+  // 魔法師交換：等所有票都算完才發生，所以他指定當下確實不知道會換到什麼。
+  // 注意：壞皇后的毒只會讓魔法師「那一票」不算數，交換技能照樣生效 ——
+  // 毒的是嘴巴不是魔法。
+  let swap = null;
+  const wizardId = Object.keys(roles || {}).find(function(k){ return roles[k] === "wizard"; });
+  const wb = wizardId && ballots[wizardId];
+  if(wb && Array.isArray(wb.swap) && wb.swap.length === 2 && wb.swap[0] !== wb.swap[1]){
+    const a = wb.swap[0], b2 = wb.swap[1];
+    const ta = totals[a] || 0, tb = totals[b2] || 0;
+    totals[a] = tb; totals[b2] = ta;
+    swap = { a: a, b: b2, movedToA: tb, movedToB: ta };
+  }
+
+  return { totals: totals, voters: voters, swap: swap, poisonedIds: poisonedIds };
+}
+
+return { ROLES: ROLES, assignRoles: assignRoles, pickMystery: pickMystery, tally: tally };
+})();
+
+/* ===== 模擬後端：把伺服器的 API 行為搬到瀏覽器裡 ===== */
+(function(){
+  var room = null;
+  var seq = 0;
+  function uid(){ return "m" + (++seq); }
+
+  function publicRoom(){
+    var ballots = room.ballots || {};
+    var out = {
+      id: room.id, title: room.title, date: room.date, time: room.time,
+      stage: room.stage, createdAt: room.createdAt, gameNonce: room.gameNonce || null,
+      members: room.members.map(function(m){
+        return { id:m.id, name:m.name, station:m.station, maxStations:m.maxStations,
+                 types:m.types, submittedAt:m.submittedAt,
+                 hasVoted: !!(ballots[m.id] && ballots[m.id].submittedAt) };
+      }),
+      result: room.result ? {
+        consensus: room.result.consensus, byType: room.result.byType,
+        warnings: room.result.warnings, noOverlap: room.result.noOverlap,
+        perSoloType: room.result.perSoloType, soloTypeCount: room.result.soloTypeCount
+      } : null,
+      mystery: room.mystery ? { id:"mystery", alias:room.mystery.alias, tagline:room.mystery.tagline,
+                                typeLabel:room.mystery.typeLabel, typeEmoji:room.mystery.typeEmoji,
+                                revealed: room.stage === "revealed" || undefined,
+                                entry: room.stage === "revealed" ? room.mystery.entry : undefined } : null,
+      votedCount: Object.keys(ballots).filter(function(k){ return ballots[k].submittedAt; }).length,
+      liveRatings: false
+    };
+    if(room.stage === "revealed") out.final = computeFinal();
+    return JSON.parse(JSON.stringify(out));
+  }
+
+  function computeFinal(){
+    var nameOf = function(mid){
+      var m = room.members.find(function(x){ return x.id === mid; });
+      return m ? m.name : "?";
+    };
+    var t = GAME.tally(room.ballots || {}, room.roles || {}, nameOf);
+    var ranked = Object.keys(t.totals).filter(function(r){ return t.totals[r] > 0; })
+      .map(function(r){ return { id:r, votes:t.totals[r], voters:t.voters[r] || [] }; })
+      .sort(function(a,b){ return b.votes - a.votes; });
+    var rank = 0, prev = null;
+    ranked.forEach(function(x,i){ if(prev===null||x.votes!==prev){ rank=i+1; prev=x.votes; } x.rank=rank; });
+    return {
+      ranked: ranked, swap: t.swap, poisoned: t.poisonedIds.map(nameOf),
+      roles: room.members.map(function(m){
+        var r = GAME.ROLES[(room.roles||{})[m.id]] || GAME.ROLES.commoner;
+        return { name:m.name, role:r.id, roleName:r.name, emoji:r.emoji,
+                 poisoned: !!(room.ballots[m.id] && room.ballots[m.id].poisoned) };
+      })
+    };
+  }
+
+  function resetGame(){
+    room.result = null; room.roles = {}; room.mystery = null;
+    room.ballots = {}; room.pendingPoison = false; room.gameNonce = null; room.stage = "collecting";
+  }
+  function bySecret(sec){
+    return room.members.find(function(m){ return m.secret === sec; }) || null;
+  }
+  function candidateIds(){
+    if(!room.result) return [];
+    return room.result.consensus.concat(room.result.byType).map(function(x){ return x.restaurant.id; });
+  }
+  function maybeReveal(){
+    var done = room.members.every(function(m){ return room.ballots[m.id] && room.ballots[m.id].submittedAt; });
+    if(done && room.members.length) room.stage = "revealed";
+  }
+
+  function readMember(b){
+    var name = String(b.name || "").trim().slice(0, 12);
+    if(!name) return { error: "請填暱稱" };
+    var station = MRT.normalizeStation(b.station);
+    if(!station) return { error: "認不出「" + (b.station || "") + "」這一站，請從清單挑一個" };
+    var types = (b.types || []).filter(function(t){
+      return DB.TYPES.some(function(x){ return x.id === t; });
+    }).slice(0, 8);
+    if(!types.length) return { error: "至少選一種想吃的" };
+    return {
+      name: name, station: station,
+      maxStations: Math.min(40, Math.max(0, parseInt(b.maxStations, 10) || 5)),
+      types: types
+    };
+  }
+
+  function ensureRoom(){
+    if(room) return;
+    var d = new Date();
+    room = {
+      id: "DEMO01", title: "週五下班聚餐",
+      date: d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"),
+      time: "19:30", stage: "collecting", members: [], result: null,
+      roles: {}, mystery: null, ballots: {}, pendingPoison: false,
+      createdAt: Date.now()
+    };
+  }
+
+  window.__MOCK_API__ = function(method, p, body){
+    ensureRoom();
+    return new Promise(function(resolve, reject){
+      setTimeout(function(){
+        try{ resolve(handle(method, p, body || {})); }
+        catch(e){ reject(e); }
+      }, 40);   // 給一點延遲，才看得出載入的感覺
+    });
+  };
+
+  function handle(method, p, b){
+    if(p === "/meta"){
+      return { types: DB.TYPES, stations: MRT.ALL_STATIONS,
+               lines: MRT.STATIONS_BY_LINE, restaurantCount: DB.RESTAURANTS.length, liveRatings: false };
+    }
+    if(method === "POST" && p === "/rooms"){
+      room.title = String(b.title || "").trim().slice(0,40) || "下班吃什麼";
+      room.date = b.date; room.time = b.time || "19:00";
+      room.members = []; room.votes = {}; room.result = null; room.stage = "collecting";
+      return publicRoom();
+    }
+    if(method === "GET" && /^\/rooms\/[^/?]+$/.test(p)) return publicRoom();
+
+    // 修改飯局名稱與時間
+    if(method === "PUT" && /^\/rooms\/[^/]+$/.test(p)){
+      if(b.title !== undefined){
+        var t = String(b.title).trim().slice(0, 40);
+        if(!t) throw new Error("飯局名稱不能空白");
+        room.title = t;
+      }
+      if(b.date !== undefined) room.date = b.date;
+      if(b.time !== undefined) room.time = b.time;
+      return publicRoom();
+    }
+
+    if(method === "POST" && /\/members$/.test(p)){
+      var parsed = readMember(b);
+      if(parsed.error) throw new Error(parsed.error);
+      parsed.id = uid(); parsed.secret = "s" + parsed.id + Math.floor(Math.random()*1e9);
+      parsed.submittedAt = Date.now();
+      room.members.push(parsed);
+      resetGame();
+      return { memberId: parsed.id, secret: parsed.secret, room: publicRoom() };
+    }
+    if(method === "PUT" && /\/members\//.test(p)){
+      var mid = p.split("/members/")[1];
+      var m = room.members.find(function(x){ return x.id === mid; });
+      if(!m) throw new Error("找不到你的資料");
+      var up = readMember(b);
+      if(up.error) throw new Error(up.error);
+      if(!m.secret) m.secret = "s" + m.id + Math.floor(Math.random()*1e9);
+      Object.assign(m, up, { submittedAt: Date.now() });
+      resetGame();
+      return { memberId: m.id, secret: m.secret, room: publicRoom() };
+    }
+    if(method === "DELETE" && /\/members\//.test(p)){
+      var did = p.split("/members/")[1];
+      room.members = room.members.filter(function(x){ return x.id !== did; });
+      resetGame();
+      return publicRoom();
+    }
+    if(method === "POST" && /\/generate$/.test(p)){
+      if(!room.members.length) throw new Error("還沒有人填寫條件");
+      room.result = ENGINE.recommend(room.members);
+      room.ballots = {}; room.pendingPoison = false;
+      room.roles = GAME.assignRoles(room.members.map(function(m){ return m.id; }));
+      var used = room.result.consensus.concat(room.result.byType).map(function(x){ return x.restaurant.id; });
+      room.mystery = GAME.pickMystery(room.result.spare || [], used);
+      room.gameNonce = Math.random().toString(16).slice(2, 10);
+      room.stage = "voting";
+      return publicRoom();
+    }
+    if(method === "GET" && /\/me$/.test(p.split("?")[0])){
+      var sec = (p.split("secret=")[1] || "");
+      var me = bySecret(decodeURIComponent(sec));
+      if(!me) throw new Error("認不出你是誰，請重新填寫條件");
+      var role = GAME.ROLES[(room.roles||{})[me.id]] || null;
+      var bal = (room.ballots||{})[me.id] || null;
+      return { memberId: me.id, name: me.name,
+        role: role ? { id:role.id, name:role.name, emoji:role.emoji, power:role.power, detail:role.detail } : null,
+        ballot: bal ? { picks:bal.picks||[], swap:bal.swap||null, poisoned:!!bal.poisoned,
+                        submittedAt:bal.submittedAt||null, wheelPick:bal.wheelPick||null } : null };
+    }
+    if(method === "POST" && /\/ballot$/.test(p)){
+      if(room.stage !== "voting") throw new Error("現在不是投票階段");
+      var mb = bySecret(b.secret);
+      if(!mb) throw new Error("認不出你是誰");
+      if(room.ballots[mb.id] && room.ballots[mb.id].submittedAt) throw new Error("你已經送出過了，投票不能反悔");
+      var rid = (room.roles||{})[mb.id];
+      if(rid === "fool") throw new Error("你是笨蛋，要用轉盤決定，不能自己選");
+      var valid = candidateIds().concat(room.mystery ? ["mystery"] : []);
+      var picks = (b.picks||[]).filter(function(x){ return valid.indexOf(x) >= 0; });
+      if(!picks.length) throw new Error("至少要選一家");
+      var swap = null;
+      if(rid === "wizard"){
+        var sw = b.swap;
+        if(!Array.isArray(sw) || sw.length !== 2 || sw[0] === sw[1] ||
+           valid.indexOf(sw[0]) < 0 || valid.indexOf(sw[1]) < 0)
+          throw new Error("魔法師要指定兩家不同的餐廳來交換票數");
+        swap = [sw[0], sw[1]];
+      }
+      var bal2 = { picks:picks, swap:swap, submittedAt:Date.now(), poisoned:false };
+      if(room.pendingPoison && rid !== "queen"){ bal2.poisoned = true; room.pendingPoison = false; }
+      if(rid === "queen") room.pendingPoison = true;
+      room.ballots[mb.id] = bal2;
+      maybeReveal();
+      return { poisoned: bal2.poisoned, room: publicRoom() };
+    }
+    if(method === "POST" && /\/spin$/.test(p)){
+      if(room.stage !== "voting") throw new Error("現在不是投票階段");
+      var mf = bySecret(b.secret);
+      if(!mf) throw new Error("認不出你是誰");
+      if((room.roles||{})[mf.id] !== "fool") throw new Error("只有笨蛋要轉轉盤");
+      if(room.ballots[mf.id] && room.ballots[mf.id].submittedAt) throw new Error("你已經轉過了");
+      var ids = candidateIds();
+      if(!ids.length) throw new Error("沒有候選餐廳可以轉");
+      var idx = Math.floor(Math.random() * ids.length);
+      var bal3 = { picks:[ids[idx]], swap:null, wheelPick:ids[idx], submittedAt:Date.now(), poisoned:false };
+      if(room.pendingPoison){ bal3.poisoned = true; room.pendingPoison = false; }
+      room.ballots[mf.id] = bal3;
+      maybeReveal();
+      return { index:idx, total:ids.length, restaurantId:ids[idx], poisoned:bal3.poisoned, room:publicRoom() };
+    }
+    if(method === "POST" && /\/reveal$/.test(p)){
+      if(room.stage !== "voting") throw new Error("現在不能結算");
+      if(!Object.keys(room.ballots||{}).length) throw new Error("還沒有人投票");
+      room.stage = "revealed";
+      return publicRoom();
+    }
+    if(method === "POST" && /\/reopen$/.test(p)){
+      resetGame();
+      return publicRoom();
+    }
+    throw new Error("預覽版沒有實作這個 API：" + method + " " + p);
+  }
+})();
+
+</script>
+<script>
+/* 朋友約飯神器 — 前端 */
+(function(){
+"use strict";
+
+var META = null;          // 類型與站名清單
+var ROOM = null;          // 目前房間狀態
+var MY_ID = null;         // 我在這個房間的成員 id（公開）
+var MY_SECRET = null;     // 我的私鑰，查自己的角色與送出投票才需要
+var MY_ROLE = null;       // 我抽到的角色（只有我看得到）
+var MY_BALLOT = null;     // 我送出的票
+var PICKS = [];           // 還沒送出前，我勾選的餐廳
+var SWAP = [];            // 魔法師指定要交換的兩家
+var SEEN_ROLE = false, SEEN_MYSTERY = false;
+var GAME_NONCE = null;    // 目前這一局的識別碼，換局了就要重新跳角色卡與彩蛋
+var MYSTERY_WINDOW = 10;  // 彩蛋只給 10 秒決定，時間到就關門
+var MYSTERY_TIMER = null;
+var POLL = null;
+var EDITING = false;
+
+var sel = { dist: 6, types: [] };
+
+/* ---------- 小工具 ---------- */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(window.__tt);
+  window.__tt = setTimeout(function(){ t.classList.remove("on"); }, 2200);
+}
+function showErr(msg){
+  $("errBox").innerHTML = msg ? '<div class="err">' + esc(msg) + "</div>" : "";
+  if(msg) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* localStorage 可能被隱私模式擋掉，失敗就退回記憶體 */
+var memStore = {};
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return memStore[k] || null; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){ memStore[k] = v; } }
+
+async function api(method, path, body){
+  // 預覽版沒有伺服器，改由瀏覽器內的模擬後端回應（正式版不會進到這一行）
+  if(window.__MOCK_API__) return window.__MOCK_API__(method, path, body);
+  var res = await fetch("/api" + path, {
+    method: method,
+    headers: body ? { "Content-Type": "application/json" } : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  var json = await res.json().catch(function(){ return {}; });
+  if(!res.ok) throw new Error(json.error || ("伺服器錯誤 " + res.status));
+  return json;
+}
+
+function roomIdFromUrl(){
+  var m = location.pathname.match(/^\/r\/([A-Z0-9]{4,8})/i);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/* ---------- 啟動 ---------- */
+async function boot(){
+  try{
+    META = await api("GET", "/meta");
+  }catch(e){
+    showErr("載不到基本資料，請重新整理頁面");
+    return;
+  }
+
+  $("statR").textContent = META.restaurantCount;
+  $("statS").textContent = META.stations.length;
+  $("fTypes").innerHTML = META.types.map(function(t){
+    return '<button type="button" class="opt" data-t="' + t.id + '">' + t.emoji + " " + esc(t.label) + "</button>";
+  }).join("");
+
+  var d = new Date();
+  $("hDate").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+
+  bindHome();
+  bindForm();
+
+  var rid = roomIdFromUrl();
+  if(rid) await openRoom(rid);
+}
+
+/* ---------- 首頁 ---------- */
+function bindHome(){
+  $("btnCreate").onclick = async function(){
+    var btn = this;
+    btn.disabled = true;
+    try{
+      var room = await api("POST", "/rooms", {
+        title: $("hTitle").value, date: $("hDate").value, time: $("hTime").value
+      });
+      history.pushState({}, "", "/r/" + room.id);
+      await openRoom(room.id);
+    }catch(e){ toast(e.message); }
+    btn.disabled = false;
+  };
+  $("btnJoin").onclick = function(){
+    var code = ($("hJoin").value || "").trim().toUpperCase();
+    if(code.length < 4) return toast("房號長度不對");
+    history.pushState({}, "", "/r/" + code);
+    openRoom(code);
+  };
+  $("hJoin").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnJoin").click(); });
+}
+
+/* ---------- 表單 ---------- */
+function bindForm(){
+  $("fTypes").addEventListener("click", function(e){
+    var b = e.target.closest(".opt"); if(!b) return;
+    var t = b.dataset.t, i = sel.types.indexOf(t);
+    if(i >= 0) sel.types.splice(i, 1);
+    else{
+      if(sel.types.length >= 8) return toast("最多選 8 種");
+      sel.types.push(t);
+    }
+    b.classList.toggle("on");
+  });
+
+  function seg(id, key, after){
+    $(id).addEventListener("click", function(e){
+      var b = e.target.closest("button"); if(!b) return;
+      this.querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+      b.classList.add("on");
+      sel[key] = parseInt(b.dataset.v, 10);
+      if(after) after();
+    });
+  }
+  seg("fDist", "dist");
+
+  /* 沒有下拉選單了，所以打到一半要給得出可以直接點的建議 */
+  $("fStation").addEventListener("input", function(){
+    var v = this.value.trim();
+    var box = $("stationMsg");
+    if(!v){ box.className = ""; box.innerHTML = ""; return; }
+
+    if(META.stations.indexOf(v) >= 0){
+      box.className = "stationOK"; box.textContent = "✓ " + v + "站";
+      return;
+    }
+    var near = META.stations.filter(function(s){ return s.indexOf(v) >= 0; }).slice(0, 6);
+    if(near.length){
+      box.className = "suggest";
+      box.innerHTML = "<span>你是不是要找：</span>" + near.map(function(s){
+        return '<button type="button" data-stop="' + esc(s) + '">' + esc(s) + "</button>";
+      }).join("");
+    }else{
+      box.className = "stationBad";
+      box.textContent = "找不到這一站，按下面「依路線選擇」挑一個";
+    }
+  });
+
+  $("stationMsg").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-stop]"); if(!b) return;
+    $("fStation").value = b.dataset.stop;
+    $("fStation").dispatchEvent(new Event("input"));
+  });
+
+  /* 依路線選站：datalist 只適合已經知道站名的人，
+     不熟的人需要看到「這條線上有哪些站、順序長怎樣」 */
+  var pickerOpen = false, pickedLine = null;
+  $("btnLines").onclick = function(){
+    pickerOpen = !pickerOpen;
+    $("linePicker").classList.toggle("hide", !pickerOpen);
+    this.textContent = pickerOpen ? "🚇 收起路線" : "🚇 依路線選擇";
+    if(pickerOpen && !$("lineList").innerHTML) renderLines();
+  };
+
+  function renderLines(){
+    $("lineList").innerHTML = META.lines.map(function(l){
+      return '<button type="button" data-line="' + l.id + '" style="color:' + l.color + '">' +
+        '<span class="dot" style="background:' + l.color + '"></span>' +
+        esc(l.name) + '</button>';
+    }).join("");
+  }
+
+  $("lineList").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    pickedLine = b.dataset.line;
+    this.querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    var line = META.lines.find(function(l){ return l.id === pickedLine; });
+    $("stopList").innerHTML = '<div class="seq">' + esc(line.name) + '　' +
+      esc(line.stations[0]) + " → " + esc(line.stations[line.stations.length - 1]) + "</div>" +
+      line.stations.map(function(st){
+        return '<button type="button" data-stop="' + esc(st) + '">' + esc(st) + "</button>";
+      }).join("");
+  });
+
+  $("stopList").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-stop]"); if(!b) return;
+    $("fStation").value = b.dataset.stop;
+    $("fStation").dispatchEvent(new Event("input"));
+    pickerOpen = false;
+    $("linePicker").classList.add("hide");
+    $("btnLines").textContent = "🚇 依路線選擇";
+  });
+
+  $("btnSubmit").onclick = submitMe;
+  $("btnEdit").onclick = function(){ EDITING = true; render(); };
+  $("btnGen").onclick = generate;
+
+  $("btnCopy").onclick = function(){
+    var url = location.origin + "/r/" + ROOM.id;
+    var txt = "【" + ROOM.title + "】" + ROOM.date + " " + ROOM.time + "\n填一下你的條件：" + url;
+    navigator.clipboard.writeText(txt).then(
+      function(){ toast("邀請訊息已複製，貼到群組就行"); },
+      function(){ toast("複製失敗，請手動複製網址列"); }
+    );
+  };
+  /* 飯局名稱與時間可以事後改 —— 時間常常會喬 */
+  $("btnEditRoom").onclick = function(){
+    $("roomView").classList.add("hide");
+    $("roomEdit").classList.remove("hide");
+    $("eTitle").value = ROOM.title;
+    $("eDate").value = ROOM.date;
+    $("eTime").value = ROOM.time;
+    $("eTitle").focus();
+  };
+  $("btnCancelRoom").onclick = function(){
+    $("roomEdit").classList.add("hide");
+    $("roomView").classList.remove("hide");
+  };
+  $("btnSaveRoom").onclick = async function(){
+    this.disabled = true;
+    try{
+      ROOM = await api("PUT", "/rooms/" + ROOM.id, {
+        title: $("eTitle").value, date: $("eDate").value, time: $("eTime").value
+      });
+      $("roomEdit").classList.add("hide");
+      $("roomView").classList.remove("hide");
+      render();
+      toast("已更新，其他人的畫面也會跟著變");
+    }catch(e){ toast(e.message); }
+    this.disabled = false;
+  };
+
+  $("btnHome").onclick = function(){
+    history.pushState({}, "", "/");
+    clearInterval(POLL); POLL = null;
+    $("viewRoom").classList.add("hide");
+    $("viewHome").classList.remove("hide");
+  };
+
+  window.addEventListener("popstate", function(){
+    var rid = roomIdFromUrl();
+    if(rid) openRoom(rid);
+    else $("btnHome").click();
+  });
+}
+
+async function submitMe(){
+  showErr("");
+  var payload = {
+    name: $("fName").value,
+    station: $("fStation").value,
+    maxStations: sel.dist,
+    types: sel.types
+  };
+  if(!payload.name.trim()) return showErr("請填暱稱");
+  if(!payload.station.trim()) return showErr("請選擇你所在的捷運站");
+  if(!payload.types.length) return showErr("至少選一種今天想吃的");
+
+  var btn = $("btnSubmit");
+  btn.disabled = true;
+  try{
+    var out = MY_ID
+      ? await api("PUT", "/rooms/" + ROOM.id + "/members/" + MY_ID, payload)
+      : await api("POST", "/rooms/" + ROOM.id + "/members", payload);
+    MY_ID = out.memberId;
+    MY_SECRET = out.secret || MY_SECRET;
+    if(window.__MOCK_API__){                    // 預覽版才需要：記住每個人的 secret 好切換身分
+      window.__secrets = window.__secrets || {};
+      window.__secrets[MY_ID] = MY_SECRET;
+    }
+    lsSet("mealvote:" + ROOM.id, MY_ID);
+    lsSet("mealvote:s:" + ROOM.id, MY_SECRET);
+    ROOM = out.room;
+    EDITING = false;
+    render();
+    toast("已送出，等其他人填完就可以產生推薦");
+  }catch(e){ showErr(e.message); }
+  btn.disabled = false;
+}
+
+async function generate(){
+  var btn = $("btnGen");
+  btn.disabled = true; btn.textContent = "配對中…";
+  try{
+    ROOM = await api("POST", "/rooms/" + ROOM.id + "/generate");
+    await loadMe();          // 角色是這一刻才發的，要重新拿
+    render();
+    setTimeout(function(){
+      var el = $("results");
+      if(el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }catch(e){ showErr(e.message); }
+  btn.disabled = false; btn.textContent = "產生餐廳推薦";
+}
+
+/* ---------- 角色與投票 ---------- */
+
+/** 拿自己的角色與投票狀態。角色是私密的，只有帶著 secret 才查得到。 */
+async function loadMe(){
+  MY_ROLE = null; MY_BALLOT = null;
+  if(!MY_SECRET || !ROOM || ROOM.stage === "collecting") return;
+  try{
+    const me = await api("GET", "/rooms/" + ROOM.id + "/me?secret=" + encodeURIComponent(MY_SECRET));
+    MY_ROLE = me.role;
+    MY_BALLOT = me.ballot;
+    if(MY_BALLOT && MY_BALLOT.picks && MY_BALLOT.picks.length) PICKS = MY_BALLOT.picks.slice();
+    if(MY_BALLOT && MY_BALLOT.swap) SWAP = MY_BALLOT.swap.slice();
+    // 重整頁面之後，把「當時押了彩蛋」這件事撿回來（10 秒不會因為重整而重來一次）
+    if(!(MY_BALLOT && MY_BALLOT.submittedAt) && mysteryChoice() === "bet" && PICKS.indexOf("mystery") < 0){
+      PICKS.push("mystery");
+    }
+  }catch(e){ /* 沒填過條件的人查不到，正常 */ }
+}
+
+function togglePick(rid){
+  if(MY_BALLOT && MY_BALLOT.submittedAt) return;
+  const i = PICKS.indexOf(rid);
+  if(i >= 0) PICKS.splice(i, 1); else PICKS.push(rid);
+  render();
+}
+
+function toggleSwap(rid){
+  if(MY_BALLOT && MY_BALLOT.submittedAt) return;
+  const i = SWAP.indexOf(rid);
+  if(i >= 0) SWAP.splice(i, 1);
+  else{
+    if(SWAP.length >= 2) SWAP.shift();
+    SWAP.push(rid);
+  }
+  render();
+}
+
+async function submitBallot(){
+  if(!PICKS.length) return toast("至少要選一家");
+  if(MY_ROLE && MY_ROLE.id === "wizard" && SWAP.length !== 2){
+    return toast("魔法師還要指定兩家來交換票數");
+  }
+  const btn = $("btnBallot");
+  if(btn) btn.disabled = true;
+  try{
+    const out = await api("POST", "/rooms/" + ROOM.id + "/ballot", {
+      secret: MY_SECRET, picks: PICKS, swap: SWAP.length === 2 ? SWAP : undefined
+    });
+    ROOM = out.room;
+    await loadMe();
+    render();
+    if(out.poisoned) showModal(poisonedModal());
+    else toast("已送出，結果等大家投完才會揭曉");
+  }catch(e){ toast(e.message); }
+  if(btn) btn.disabled = false;
+}
+
+/** 笨蛋的轉盤：結果由伺服器決定，前端只負責把指針轉到那一格 */
+async function spinWheel(){
+  const btn = $("btnSpin");
+  if(btn) btn.disabled = true;
+  try{
+    const out = await api("POST", "/rooms/" + ROOM.id + "/spin", { secret: MY_SECRET });
+    const seg = 360 / out.total;
+    // 多轉五圈再停在目標格的正中間，看起來才像真的在轉
+    const target = 360 * 5 + (360 - (out.index * seg + seg / 2));
+    const wheel = $("wheel");
+    if(wheel){
+      wheel.style.transition = "transform 4.2s cubic-bezier(.17,.67,.16,1)";
+      wheel.style.transform = "rotate(" + target + "deg)";
+    }
+    setTimeout(async function(){
+      ROOM = out.room;
+      await loadMe();
+      render();
+      if(out.poisoned) showModal(poisonedModal());
+    }, 4500);
+  }catch(e){ toast(e.message); if(btn) btn.disabled = false; }
+}
+
+async function revealNow(){
+  if(!confirm("還有人沒投票，確定要直接結算嗎？沒投的人就不算了。")) return;
+  try{
+    ROOM = await api("POST", "/rooms/" + ROOM.id + "/reveal");
+    await loadMe();
+    render();
+  }catch(e){ toast(e.message); }
+}
+
+/** 再玩一局：清掉票、重抽角色、重抽彩蛋，條件保留 */
+async function reopenGame(){
+  if(!confirm("再玩一局？票數會歸零，角色與神秘店家都會重抽。大家填的條件會留著。")) return;
+  try{
+    ROOM = await api("POST", "/rooms/" + ROOM.id + "/reopen");
+    SEEN_ROLE = false; SEEN_MYSTERY = false;
+    PICKS = []; SWAP = []; MY_BALLOT = null; MY_ROLE = null;
+    await loadMe();
+    render();
+    toast("角色重抽了，按「產生餐廳推薦」開始新的一局");
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------- 彈窗 ---------- */
+function showModal(html){
+  var el = $("modal");
+  el.innerHTML = '<div class="mbox">' + html + "</div>";
+  el.classList.add("on");
+}
+function closeModal(){ $("modal").classList.remove("on"); }
+window.__closeModal = closeModal;
+
+function roleModal(r){
+  return '<div class="mrole">' +
+    '<div class="mtag">你抽到的角色（只有你看得到）</div>' +
+    '<div class="memoji">' + r.emoji + "</div>" +
+    "<h3>" + esc(r.name) + "</h3>" +
+    '<p class="mpower">' + esc(r.power) + "</p>" +
+    '<p class="mdetail">' + esc(r.detail) + "</p>" +
+    '<button class="btn" onclick="__closeRole()">知道了</button></div>';
+}
+/** 關掉角色卡之後，接著把彩蛋跳出來（不用等下一次輪詢） */
+function closeRoleModal(){
+  closeModal();
+  if(ROOM && ROOM.stage === "voting" && ROOM.mystery && !SEEN_MYSTERY){
+    SEEN_MYSTERY = true;
+    setTimeout(function(){ showMysteryModal(ROOM.mystery); }, 180);
+  }
+}
+window.__closeRole = closeRoleModal;
+/* ---------- 彩蛋的 10 秒視窗 ---------- */
+
+/** 這一場、這個人對彩蛋做過的決定。存起來是為了重整頁面不能重來一次。 */
+function mysteryKey(){
+  // 帶上這一局的 nonce：再玩一局時彩蛋會重抽，上一局的決定不能沿用
+  return "mv.myst." + (ROOM ? ROOM.id : "?") + "." + (ROOM && ROOM.gameNonce || "-") + "." + (MY_ID || "?");
+}
+function mysteryChoice(){ return lsGet(mysteryKey()); }          // "bet" | "missed" | null
+function setMysteryChoice(v){ lsSet(mysteryKey(), v); }
+
+function mysteryModal(m){
+  const decidable = !(MY_BALLOT && MY_BALLOT.submittedAt) && !(MY_ROLE && MY_ROLE.id === "fool");
+  return '<div class="mmystery">' +
+    '<div class="mtag">今日主廚隱藏推薦</div>' +
+    '<div class="memoji">🕵️</div>' +
+    "<h3>" + esc(m.alias) + "</h3>" +
+    '<p class="mtagline">「' + esc(m.tagline) + '」</p>' +
+    '<p class="mdetail">不會告訴你是哪一家。' +
+      (m.typeLabel ? "只透露類型是「" + esc(m.typeLabel) + "」，" : "") +
+      "而且大家都到得了。結算之後才會公開是哪一家。</p>" +
+    (decidable
+      ? '<div class="mycd"><span class="num" id="myCd">' + MYSTERY_WINDOW + "</span> 秒內決定" +
+          '<div class="mybar"><i id="myBar" style="width:100%"></i></div>' +
+          '<p class="mynote">時間到就關門了，之後不能再投給它。</p></div>' +
+        '<div class="myacts">' +
+          '<button class="btn" onclick="__mysteryBet()">🎲 賭一把，投給它</button>' +
+          '<button class="btn ghost" onclick="__mysteryPass()">算了，不冒險</button>' +
+        "</div>"
+      : '<p class="mynote">' +
+          (MY_ROLE && MY_ROLE.id === "fool"
+            ? "你是笨蛋，投給誰由轉盤決定，這一間也在轉盤之外。"
+            : "你已經送出投票了，這一間只能看看。") +
+        "</p><button class=\"btn\" onclick=\"__closeModal()\">知道了</button>") +
+  "</div>";
+}
+
+/** 跳出彩蛋並開始倒數。時間到自動關門，之後那張卡片就不能投了。 */
+function showMysteryModal(m){
+  showModal(mysteryModal(m));
+  stopMysteryTimer();
+  if(!$("myCd")) return;                       // 沒有決定權的人不倒數
+
+  var left = MYSTERY_WINDOW;
+  MYSTERY_TIMER = setInterval(function(){
+    left--;
+    var n = $("myCd"), bar = $("myBar");
+    if(!n){ stopMysteryTimer(); return; }      // 彈窗被別的東西蓋掉了
+    n.textContent = Math.max(0, left);
+    if(bar) bar.style.width = Math.max(0, left / MYSTERY_WINDOW * 100) + "%";
+    if(left <= 0){
+      stopMysteryTimer();
+      setMysteryChoice("missed");
+      closeModal();
+      render();
+      toast("10 秒到了，神秘店家關門了");
+    }
+  }, 1000);
+}
+function stopMysteryTimer(){
+  if(MYSTERY_TIMER){ clearInterval(MYSTERY_TIMER); MYSTERY_TIMER = null; }
+}
+
+function mysteryBet(){
+  stopMysteryTimer();
+  setMysteryChoice("bet");
+  if(PICKS.indexOf("mystery") < 0) PICKS.push("mystery");
+  closeModal();
+  render();
+  toast("押上去了。別忘了最後還要按送出投票");
+}
+function mysteryPass(){
+  stopMysteryTimer();
+  setMysteryChoice("missed");
+  const i = PICKS.indexOf("mystery");
+  if(i >= 0) PICKS.splice(i, 1);
+  closeModal();
+  render();
+}
+window.__mysteryBet = mysteryBet;
+window.__mysteryPass = mysteryPass;
+function poisonedModal(){
+  const wiz = MY_ROLE && MY_ROLE.id === "wizard";
+  return '<div class="mrole poison">' +
+    '<div class="memoji">🍎</div><h3>你被壞皇后毒啞了</h3>' +
+    '<p class="mpower">你剛剛送出的票整張作廢，這一輪不算數。</p>' +
+    '<p class="mdetail">壞皇后會毒掉「緊接在她之後送出投票」的人。你只是運氣不好，剛好排在她後面。' +
+      (wiz ? "不過你指定的那兩家還是會交換 —— 毒的是嘴巴，不是魔法。" : "") + "</p>" +
+    '<button class="btn" onclick="__closeModal()">' + (wiz ? "哼，還好" : "可惡") + "</button></div>";
+}
+
+/* ---------- 房間 ---------- */
+async function openRoom(id){
+  try{
+    ROOM = await api("GET", "/rooms/" + id);
+  }catch(e){
+    $("viewHome").classList.remove("hide");
+    toast(e.message);
+    history.replaceState({}, "", "/");
+    return;
+  }
+
+  MY_ID = lsGet("mealvote:" + ROOM.id);
+  MY_SECRET = lsGet("mealvote:s:" + ROOM.id);
+  if(MY_ID && !ROOM.members.some(function(m){ return m.id === MY_ID; })){ MY_ID = null; MY_SECRET = null; }
+  await loadMe();
+
+  $("viewHome").classList.add("hide");
+  $("viewRoom").classList.remove("hide");
+  render();
+
+  clearInterval(POLL);
+  POLL = setInterval(async function(){
+    if(document.hidden) return;
+    try{
+      var fresh = await api("GET", "/rooms/" + ROOM.id);
+      // 自己正在打字時不要被輪詢蓋掉畫面
+      var editingRoom = !$("roomEdit").classList.contains("hide");
+      if(JSON.stringify(fresh) !== JSON.stringify(ROOM) && !EDITING && !editingRoom){
+        var stageChanged = fresh.stage !== ROOM.stage;
+        ROOM = fresh;
+        // 別人按下產生推薦時，我的角色是那一刻才發的，要去拿回來
+        if(stageChanged || (!MY_ROLE && fresh.stage !== "collecting")) await loadMe();
+        render();
+      }
+    }catch(e){ /* 網路瞬斷就跳過這一輪 */ }
+  }, 3500);
+}
+
+/* ---------- 畫面 ---------- */
+function render(){
+  // 換了一局（有人改條件、或按了「再玩一局」）→ 角色卡與彩蛋要重新跳一次
+  if(ROOM.gameNonce !== GAME_NONCE){
+    GAME_NONCE = ROOM.gameNonce;
+    SEEN_ROLE = false; SEEN_MYSTERY = false;
+    stopMysteryTimer();
+    if(!(MY_BALLOT && MY_BALLOT.submittedAt)){ PICKS = []; SWAP = []; }
+  }
+
+  $("rTitle").textContent = ROOM.title;
+  var wd = ["日","一","二","三","四","五","六"][new Date(ROOM.date + "T00:00:00").getDay()];
+  $("rWhen").textContent = ROOM.date + "（" + wd + "）" + ROOM.time;
+  $("rCode").textContent = ROOM.id;
+
+  var me = ROOM.members.find(function(m){ return m.id === MY_ID; });
+
+  /* 我的條件 */
+  if(me && !EDITING){
+    $("meForm").classList.add("hide");
+    $("meDone").classList.remove("hide");
+    $("meTitle").textContent = "你的條件";
+    $("meSub").textContent = "改了之後推薦會重新計算";
+    $("meAv").textContent = me.name.slice(0, 1);
+    $("meName").textContent = me.name;
+    $("meDetail").textContent = me.station + "站 · " + distLabel(me.maxStations) +
+      " · " + me.types.map(typeLabel).join("、");
+  }else{
+    $("meForm").classList.remove("hide");
+    $("meDone").classList.add("hide");
+    $("meTitle").textContent = me ? "修改你的條件" : "填寫你的條件";
+    $("meSub").textContent = me ? "改完記得送出" : "三個問題，20 秒填完";
+    if(me && EDITING) fillForm(me);
+  }
+
+  /* 成員列表 */
+  $("mCount").textContent = ROOM.members.length ? "（" + ROOM.members.length + " 人）" : "";
+  $("mList").innerHTML = ROOM.members.length
+    ? ROOM.members.map(function(m){
+        return '<div class="m' + (m.id === MY_ID ? " me" : "") + '">' +
+          '<div class="av">' + esc(m.name.slice(0,1)) + "</div>" +
+          '<div class="info"><b>' + esc(m.name) + "</b>" +
+          '<div class="d">' + esc(m.station) + "站 · " + distLabel(m.maxStations) +
+          " · " + m.types.map(typeLabel).join("、") + "</div></div>" +
+          (m.id === MY_ID ? '<span class="tag">你</span>' : "") + "</div>";
+      }).join("")
+    : '<div class="blank"><div class="big">👀</div><p>還沒有人填，把連結丟到群組吧</p></div>';
+
+  $("btnGen").disabled = ROOM.members.length === 0;
+  $("btnGen").textContent = ROOM.stage === "collecting"
+    ? "產生餐廳推薦" + (ROOM.members.length ? "（" + ROOM.members.length + " 人）" : "")
+    : "重新產生推薦";
+
+  renderResults();
+}
+
+function fillForm(m){
+  $("fName").value = m.name;
+  $("fStation").value = m.station;
+  sel.dist = m.maxStations; sel.types = m.types.slice();
+
+  $("fDist").querySelectorAll("button").forEach(function(b){
+    b.classList.toggle("on", parseInt(b.dataset.v,10) === m.maxStations);
+  });
+  if(!$("fDist").querySelector(".on")) $("fDist").lastElementChild.classList.add("on");
+
+  $("fTypes").querySelectorAll(".opt").forEach(function(b){
+    b.classList.toggle("on", m.types.indexOf(b.dataset.t) >= 0);
+  });
+}
+
+function clearForm(){
+  $("fName").value = ""; $("fStation").value = ""; $("stationMsg").innerHTML = "";
+  sel = { dist: 6, types: [] };
+  $("fDist").querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.dataset.v === "6"); });
+  $("fTypes").querySelectorAll(".opt").forEach(function(b){ b.classList.remove("on"); });
+}
+
+function typeLabel(id){
+  var t = META.types.find(function(x){ return x.id === id; });
+  return t ? t.label.split("・")[0] : id;
+}
+function distLabel(n){ return n >= 40 ? "距離不限" : n + " 站內"; }
+
+/* 步行時間：用不動產業界慣用的每分鐘 80 公尺換算，不足一分鐘也算一分鐘 */
+function walkMins(metres){ return Math.max(1, Math.ceil(metres / 80)); }
+
+/* ---------- 推薦結果 ---------- */
+function renderResults(){
+  const box = $("results");
+  if(ROOM.stage === "collecting" || !ROOM.result){ box.innerHTML = ""; return; }
+  box.innerHTML = (ROOM.stage === "revealed") ? revealedHtml() : votingHtml();
+
+  // 進到投票階段時，角色卡與彩蛋各跳一次
+  if(ROOM.stage === "voting"){
+    if(MY_ROLE && !SEEN_ROLE){ SEEN_ROLE = true; showModal(roleModal(MY_ROLE)); return; }
+    if(ROOM.mystery && !SEEN_MYSTERY && SEEN_ROLE){ SEEN_MYSTERY = true; showMysteryModal(ROOM.mystery); }
+  }
+}
+
+/** 這一輪所有可以投的選項（推薦候選 + 彩蛋） */
+function allOptions(){
+  const res = ROOM.result;
+  const list = (res.consensus || []).concat(res.byType || []);
+  if(ROOM.mystery){
+    if(ROOM.mystery.revealed && ROOM.mystery.entry){
+      // 揭曉之後換成真面目：拿真實店家的完整資料，但 id 仍保持 "mystery"，
+      // 不然對不上大家投的那一票。
+      const e = ROOM.mystery.entry;
+      list.push(Object.assign({}, e, {
+        bucket: "mystery",
+        restaurant: Object.assign({}, e.restaurant, {
+          id: "mystery", mystery: true, wasAlias: ROOM.mystery.alias, tagline: ROOM.mystery.tagline
+        })
+      }));
+    }else{
+      list.push({
+        bucket: "mystery", typeLabel: ROOM.mystery.typeLabel, typeEmoji: ROOM.mystery.typeEmoji,
+        voters: [], ev: null,
+        restaurant: { id: "mystery", name: ROOM.mystery.alias, note: ROOM.mystery.tagline,
+                      station: null, price: null, mystery: true }
+      });
+    }
+  }
+  return list;
+}
+
+/* ---------- 投票中 ---------- */
+function votingHtml(){
+  const n = ROOM.members.length;
+  const res = ROOM.result;
+  const locked = !!(MY_BALLOT && MY_BALLOT.submittedAt);
+  const isFool = MY_ROLE && MY_ROLE.id === "fool";
+  const isWizard = MY_ROLE && MY_ROLE.id === "wizard";
+  let html = "";
+
+  /* 進度條 */
+  html += '<div class="board"><div class="board-h">投票進行中' +
+    "<span>" + ROOM.votedCount + " / " + n + " 人已送出</span></div>" +
+    '<div class="waiting">' + ROOM.members.map(function(m){
+      return '<span class="' + (m.hasVoted ? "done" : "") + '">' +
+        (m.hasVoted ? "✓ " : "⏳ ") + esc(m.name) + "</span>";
+    }).join("") + "</div>" +
+    '<p class="hidden-note">🔒 結果會等大家都投完才揭曉，投票期間看不到任何票數。</p>' +
+    (MY_ID && ROOM.votedCount > 0 && ROOM.votedCount < n
+      ? '<button class="clearv" onclick="__reveal()">不等了，直接結算</button>' : "") +
+    "</div>";
+
+  /* 我的角色小卡 */
+  if(MY_ROLE){
+    html += '<div class="myrole" onclick="__showRole()">' +
+      '<span class="e">' + MY_ROLE.emoji + "</span>" +
+      "<div><b>你是「" + esc(MY_ROLE.name) + "」</b><span>" + esc(MY_ROLE.power) + "</span></div>" +
+      '<span class="q">?</span></div>';
+  }
+
+  if(locked){
+    html += '<div class="doneBox">' +
+      (MY_BALLOT.poisoned
+        ? "<b>🍎 你被壞皇后毒啞了</b><p>這一輪你的票不算數，等大家投完看結果吧。" +
+          (isWizard ? "不過你指定的交換照樣會生效 —— 毒的是嘴巴，不是魔法。" : "") + "</p>"
+        : "<b>✅ 你已經送出投票</b><p>投票不能反悔。等其他人投完就會自動揭曉。</p>") +
+      "</div>";
+  }
+
+  /* 笨蛋的轉盤 */
+  if(isFool && !locked){
+    const ids = (res.consensus || []).concat(res.byType || []);
+    const seg = 360 / ids.length;
+    const colors = ["#e2622f","#2f9169","#c8891c","#5b8fc9","#a05fb4","#c4483a","#3fa39b","#8a8f3a"];
+    const stops = ids.map(function(x, i){
+      return colors[i % colors.length] + " " + (i * seg) + "deg " + ((i + 1) * seg) + "deg";
+    }).join(",");
+    html += '<div class="wheelbox"><h3>🤡 你是笨蛋，不能自己選</h3>' +
+      "<p>按下去讓轉盤決定你投給誰。轉到哪家就是哪家，不能重來。</p>" +
+      '<div class="wheelwrap"><div class="pointer">▼</div>' +
+      '<div class="wheel" id="wheel" style="background:conic-gradient(' + stops + ')">' +
+      ids.map(function(x, i){
+        const a = i * seg + seg / 2;
+        return '<span class="wl" style="transform:rotate(' + a + 'deg) translateY(-38%)">' +
+          esc(x.restaurant.name.slice(0, 6)) + "</span>";
+      }).join("") + "</div></div>" +
+      '<button class="btn" id="btnSpin" onclick="__spin()">轉！</button></div>';
+  }
+
+  /* 魔法師的交換指定 */
+  if(isWizard && !locked){
+    html += '<div class="wizbox"><h3>🧙 指定兩家交換票數</h3>' +
+      "<p>交換會在所有人投完之後才發生，所以你現在不知道那兩家各有幾票。閉著眼睛選吧。</p>" +
+      '<div class="swaptags">' + (SWAP.length
+        ? SWAP.map(function(rid){
+            const o = allOptions().find(function(x){ return x.restaurant.id === rid; });
+            return "<span>" + esc(o ? o.restaurant.name : rid) + "</span>";
+          }).join('<em>↔</em>')
+        : '<span class="ph">還沒指定，點下面卡片的「選來交換」</span>') + "</div></div>";
+  }
+
+  /* 候選卡片：維持「最多人想吃」與「每個人各自想吃的」兩區，投的是同一張票 */
+  const opts = allOptions();
+  const hint = isFool ? "笨蛋不能自己選，看轉盤決定。" : "可以複選，喜歡的都按下去，最後記得送出。";
+  const card = function(x){ return optionCard(x, n, locked, isFool, isWizard); };
+
+  const consensus = opts.filter(function(x){ return x.bucket === "consensus"; });
+  const solo      = opts.filter(function(x){ return x.bucket !== "consensus" && x.bucket !== "mystery"; });
+  const mystery   = opts.filter(function(x){ return x.bucket === "mystery"; });
+
+  html += '<div class="sec"><div class="sec-h"><h3>🔥 最多人想吃的</h3>' +
+    '<span class="cnt">' + consensus.length + " 家</span></div>" +
+    '<p class="lead">' + (consensus.length
+      ? "兩個人以上都選了同一個類型，依想吃的人數排。" + hint
+      : "大家想吃的類型完全沒有交集，所以這一區是空的——直接從下面各自的選項裡挑吧。") + "</p>" +
+    consensus.map(card).join("") + "</div>";
+
+  if(solo.length){
+    const per = res.perSoloType === 2 ? "每種挑兩家備用。" : "每種只挑一家。";
+    html += '<div class="sec"><div class="sec-h"><h3>🎯 每個人各自想吃的</h3>' +
+      '<span class="cnt">' + solo.length + " 家</span></div>" +
+      '<p class="lead">只有一個人選的類型，' + per + "</p>" +
+      solo.map(card).join("") + "</div>";
+  }
+
+  if(mystery.length){
+    html += '<div class="sec"><div class="sec-h"><h3>🕵️ 今日主廚隱藏推薦</h3>' +
+      '<span class="cnt">1 家</span></div>' +
+      '<p class="lead">不會告訴你是哪一家，全房間看到的是同一間。要不要賭一把隨你。</p>' +
+      mystery.map(card).join("") + "</div>";
+  }
+
+  if(!locked && !isFool){
+    html += '<div class="sticky"><button class="btn green" id="btnBallot" onclick="__submitBallot()">' +
+      "送出投票（已選 " + PICKS.length + " 家）</button></div>";
+  }
+
+  if(res.warnings && res.warnings.length){
+    html += '<div class="warnbox"><b>幾件事先說一下</b><ul>' +
+      res.warnings.map(function(w){ return "<li>" + esc(w) + "</li>"; }).join("") + "</ul></div>";
+  }
+  return html;
+}
+
+function optionCard(x, n, locked, isFool, isWizard){
+  const r = x.restaurant;
+  const picked = PICKS.indexOf(r.id) >= 0;
+  const inSwap = SWAP.indexOf(r.id) >= 0;
+  const unmasked = !!r.wasAlias;              // 揭曉後的神秘店家：已經知道是誰了
+  const isMystery = !!r.mystery && !unmasked; // 還蒙著面的神秘店家
+
+  const why = x.typeLabel
+    ? x.typeEmoji + " " + esc(x.typeLabel) + (x.voters && x.voters.length ? "　" + esc(x.voters.join("、")) + " 想吃" : "")
+    : "";
+
+  let pill = "";
+  if(isMystery){
+    pill = '<span class="pill mys">神秘</span>';
+  }else if(unmasked){
+    pill = '<span class="pill mys">🕵️ 揭曉</span>';
+  }else if(x.voters){
+    const c = x.voters.length;
+    let cls, txt;
+    if(c >= n && n >= 2){ cls = "v-all"; txt = "全員 " + n + " 人都想吃"; }
+    else if(c >= 4)     { cls = "v4";    txt = c + " 人想吃"; }
+    else if(c === 3)    { cls = "v3";    txt = "3 人想吃"; }
+    else if(c === 2)    { cls = "v2";    txt = "2 人想吃"; }
+    else                { cls = "v1";    txt = "1 人想吃"; }
+    pill = '<span class="pill ' + cls + '">' + txt + "</span>";
+  }
+
+  return '<div class="r' + (picked ? " picked" : "") + (isMystery || unmasked ? " mystery" : "") + '">' +
+    (why ? '<div class="why">' + why + "</div>" : "") +
+    (unmasked ? '<div class="unmask">' + esc(r.wasAlias) + " 其實是 👇</div>" : "") +
+    '<div class="rh"><h4>' + esc(r.name) + "</h4>" + pill + "</div>" +
+    (isMystery
+      ? '<p class="note">「' + esc(r.note) + '」</p><p class="note dim">今天只透露類型是「' +
+        esc(x.typeLabel || "保密") + '」，而且大家都到得了。真實店名要等結算才會公開。</p>'
+      : '<div class="meta"><span>🚇 ' + esc(r.station) + "站</span>" +
+        (r.price ? "<span class='dot'>·</span><span>約 $" + r.price + " / 人</span>" : "") +
+        (r.book ? '<span class="pill warn">建議訂位</span>' : "") + "</div>" +
+        (r.dist != null ? '<div class="meta"><span class="walk">🚶 出站後約 ' + r.dist + " 公尺・走路 " + walkMins(r.dist) + " 分鐘</span></div>" : "") +
+        (r.note ? '<p class="note">' + esc(r.note) + "</p>" : "") +
+        '<div class="links">' +
+          '<a href="' + r.mapUrl + '" target="_blank" rel="noopener">地圖・評分</a>' +
+          '<a href="' + r.menuUrl + '" target="_blank" rel="noopener">看菜單</a>' +
+          '<a href="' + r.bookUrl + '" target="_blank" rel="noopener">查訂位</a>' +
+        "</div>") +
+    // 彩蛋那張卡片永遠要說明白它現在是什麼狀態，笨蛋與已送出的人也要
+    (isMystery && (locked || isFool)
+      ? '<div class="pickbar"><span class="pickbtn locked' + (picked ? " on" : "") + '">' +
+          (isFool ? "🤡 轉盤不含這一家"
+                  : picked ? "🎲 已押注" : "⏳ 沒有押注") + "</span></div>"
+      : "") +
+    (locked || isFool ? "" :
+      '<div class="pickbar">' +
+        // 彩蛋的去留在那 10 秒的彈窗裡就決定了，這裡只顯示結果，不再給第二次機會
+        (isMystery
+          ? '<span class="pickbtn locked' + (picked ? " on" : "") + '">' +
+              (picked ? "🎲 已押注" : mysteryChoice() ? "⏳ 已錯過，不能再投" : "⏳ 等你決定…") + "</span>"
+          : '<button class="pickbtn' + (picked ? " on" : "") + '" onclick="__pick(\'' + r.id + '\')">' +
+              (picked ? "✓ 已選" : "＋ 選這家") + "</button>") +
+        (isWizard ? '<button class="swapbtn' + (inSwap ? " on" : "") + '" onclick="__swap(\'' + r.id + '\')">' +
+          (inSwap ? "🧙 交換中" : "選來交換") + "</button>" : "") +
+      "</div>") +
+  "</div>";
+}
+
+/* ---------- 揭曉 ---------- */
+function revealedHtml(){
+  const f = ROOM.final;
+  const opts = allOptions();
+  const nameOf = function(rid){
+    const o = opts.find(function(x){ return x.restaurant.id === rid; });
+    return o ? o.restaurant.name : rid;
+  };
+  let html = "";
+
+  const top = f.ranked.filter(function(x){ return x.rank <= 3; }).slice(0, 5);
+  const medal = ["🥇", "🥈", "🥉"];
+
+  html += '<div class="board reveal"><div class="board-h">最終結果' +
+    "<span>已套用角色技能</span></div>" +
+    (top.length ? top.map(function(x){
+      const max = f.ranked[0].votes || 1;
+      return '<div class="row' + (x.rank === 1 ? " lead" : "") + '">' +
+        '<span class="medal">' + (medal[x.rank - 1] || "") + "</span>" +
+        '<div class="info"><b>' + esc(nameOf(x.id)) + (x.id === "mystery" ? " 🕵️" : "") + "</b>" +
+          '<span class="sub">' + esc(x.voters.join("、") || "—") + "</span>" +
+          '<span class="bar"><i style="width:' + Math.round(x.votes / max * 100) + '%"></i></span>' +
+        "</div>" +
+        '<span class="cnt">' + x.votes + ' <em>票</em></span>' +
+      "</div>";
+    }).join("") : '<p class="hidden-note">沒有人投票。</p>') +
+    "</div>";
+
+  /* 技能結算說明 */
+  let fx = "";
+  const wizRole = (f.roles || []).find(function(r){ return r.role === "wizard"; });
+  if(f.swap){
+    fx += "<li>🧙 魔法師把「" + esc(nameOf(f.swap.a)) + "」與「" + esc(nameOf(f.swap.b)) + "」的票數對調了" +
+      (wizRole && wizRole.poisoned ? "（他被毒啞了，但交換照樣生效）" : "") + "</li>";
+  }
+  if(f.poisoned && f.poisoned.length) fx += "<li>🍎 " + esc(f.poisoned.join("、")) + " 被壞皇后毒啞，票不算數</li>";
+  const king = (f.roles || []).find(function(r){ return r.role === "king"; });
+  if(king) fx += "<li>👑 " + esc(king.name) + " 是國王，每一票都算兩票</li>";
+  const fool = (f.roles || []).find(function(r){ return r.role === "fool"; });
+  if(fool) fx += "<li>🤡 " + esc(fool.name) + " 是笨蛋，那一票是轉盤轉出來的</li>";
+  if(fx) html += '<div class="warnbox"><b>這一局發生了什麼</b><ul>' + fx + "</ul></div>";
+
+  /* 角色揭曉 */
+  html += '<div class="board"><div class="board-h">角色揭曉<span>現在可以說了</span></div>' +
+    '<div class="rolelist">' + (f.roles || []).map(function(r){
+      return '<span><b>' + r.emoji + "</b> " + esc(r.name) + "　" + esc(r.roleName) +
+        (r.poisoned ? " 😵" : "") + "</span>";
+    }).join("") + "</div></div>";
+
+  if(ROOM.mystery){
+    const my = opts.find(function(x){ return x.restaurant.id === "mystery"; });
+    const hit = f.ranked.find(function(y){ return y.id === "mystery"; });
+    const got = hit ? hit.votes : 0;
+    html += '<div class="unmaskbox"><b>🕵️ 神秘店家的真面目</b>' +
+      '<p class="alias">' + esc(ROOM.mystery.alias) + " 其實是——</p>" +
+      (my && !my.restaurant.wasAlias
+        ? '<p class="real">（這一局沒有抽到神秘店家）</p>'
+        : '<p class="real">' + esc(my ? my.restaurant.name : "?") + "</p>" +
+          '<p class="sub">' + esc(ROOM.mystery.typeEmoji + " " + (ROOM.mystery.typeLabel || "")) +
+            (my && my.restaurant.station ? "　🚇 " + esc(my.restaurant.station) + "站" : "") + "</p>" +
+          '<p class="sub">' + (got ? "有 " + got + " 票賭了下去 —— 賭得值不值，你們自己評斷。" : "沒有人敢賭它，可惜了。") + "</p>") +
+      "</div>";
+  }
+
+  html += '<div class="sticky"><button class="btn ghost" id="btnReopen" onclick="__reopen()">' +
+    "🔄 再玩一局（重抽角色）</button></div>";
+
+  html += '<div class="sec"><div class="sec-h"><h3>完整名單</h3></div>' +
+    opts.map(function(x){
+      const hit = f.ranked.find(function(y){ return y.id === x.restaurant.id; });
+      return optionCard(x, ROOM.members.length, true, false, false).replace("</div>",
+        '<div class="votebar"><div class="tally"><span class="num">' + (hit ? hit.votes : 0) +
+        '</span><span class="names">' + esc(hit && hit.voters.length ? hit.voters.join("、") : "沒有人投") +
+        "</span></div></div></div>");
+    }).join("") + "</div>";
+
+  return html;
+}
+
+window.__pick = togglePick;
+window.__swap = toggleSwap;
+window.__submitBallot = submitBallot;
+window.__spin = spinWheel;
+window.__reveal = revealNow;
+window.__reopen = reopenGame;
+window.__showRole = function(){ if(MY_ROLE) showModal(roleModal(MY_ROLE)); };
+
+/* 預覽版專用掛勾。正式版沒有 __MOCK_API__，這段等於不存在。 */
+if(window.__MOCK_API__){
+  window.__preview = {
+    open: openRoom,
+    newMember: function(){
+      MY_ID = null; MY_SECRET = null; MY_ROLE = null; MY_BALLOT = null;
+      PICKS = []; SWAP = []; SEEN_ROLE = false; SEEN_MYSTERY = false;
+      EDITING = false; clearForm(); render();
+    },
+    setMember: async function(id){
+      MY_ID = id;
+      MY_SECRET = (window.__secrets || {})[id] || null;
+      MY_ROLE = null; MY_BALLOT = null; PICKS = []; SWAP = [];
+      SEEN_ROLE = false; SEEN_MYSTERY = false; EDITING = false;
+      await loadMe();
+      render();
+    },
+    reload: function(){ return openRoom(ROOM ? ROOM.id : "DEMO01"); }
+  };
+}
+
+boot();
+})();
+
+</script>
+<script>
+
+/* 預覽版的操作列。正式版沒有這一段。 */
+var DEMO = [
+  { name:"小明", station:"市政府", maxStations:6,  types:["japanese","bbq"] },
+  { name:"小華", station:"公館",   maxStations:10, types:["hotpot","ramen"] },
+  { name:"小美", station:"中山",   maxStations:4,  types:["korean","hotpot"] }
+];
+
+function pvNote(){
+  var el = document.querySelector(".pvnote");
+  if(el) return;
+  var n = document.createElement("div");
+  n.className = "pvnote";
+  n.innerHTML = "這是<b>預覽版</b>：畫面、餐廳資料與推薦演算法都跟正式版完全相同，" +
+    "但後端換成了瀏覽器內的模擬，所以「每個人在自己手機上填」「即時同步」看不出來，" +
+    "重新整理也會清空。用上面的按鈕就能在同一個畫面加好幾個人、試投票。";
+  var bar = document.querySelector(".pvbar");
+  bar.parentNode.insertBefore(n, bar.nextSibling);
+}
+
+async function pvDemo(){
+  for(var i = 0; i < DEMO.length; i++){
+    var d = DEMO[i];
+    await window.__MOCK_API__("POST", "/rooms/DEMO01/members", d);
+  }
+  await window.__preview.reload();
+  var ms = await window.__MOCK_API__("GET", "/rooms/DEMO01");
+  if(ms.members.length) window.__preview.setMember(ms.members[0].id);
+  await pvWho();
+}
+function pvNew(){ window.__preview.newMember(); pvWho(); window.scrollTo({ top:0, behavior:"smooth" }); }
+/* 表單送出後身分列也要跟著更新 */
+document.addEventListener("click", function(e){
+  if(e.target && e.target.id === "btnSubmit") setTimeout(pvWho, 400);
+});
+async function pvReset(){
+  await window.__MOCK_API__("POST", "/rooms", { title:"週五下班聚餐", date:document.getElementById("hDate").value, time:"19:30" });
+  window.__preview.newMember();
+  await window.__preview.reload();
+  await pvWho();
+}
+async function pvSwitch(){
+  var r = await window.__MOCK_API__("GET", "/rooms/DEMO01");
+  if(!r.members.length) return alert("還沒有人填寫");
+  var names = r.members.map(function(m,i){ return (i+1) + ". " + m.name; }).join("\n");
+  var pick = prompt("要用誰的身分看畫面？輸入編號：\n" + names + "\n（0 = 都不是，當成新來的人）", "1");
+  if(pick === null) return;
+  var i = parseInt(pick, 10);
+  if(i === 0) window.__preview.newMember();
+  else if(r.members[i-1]) window.__preview.setMember(r.members[i-1].id);
+  await pvWho();
+}
+async function pvWho(){
+  var r = await window.__MOCK_API__("GET", "/rooms/DEMO01");
+  var me = document.querySelector(".m.me b");
+  document.getElementById("pvWho").textContent =
+    "目前身分：" + (me ? me.textContent : "新來的人") + "　·　房內 " + r.members.length + " 人";
+}
+
+/* 直接進到房間，不用先經過首頁 */
+setTimeout(async function(){
+  pvNote();
+  await window.__preview.open("DEMO01");
+  document.getElementById("viewHome").classList.add("hide");
+  pvWho();
+}, 120);
+
+</script>
+</body>
+</html>

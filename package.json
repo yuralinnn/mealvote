@@ -1,0 +1,19 @@
+{
+  "name": "mealvote",
+  "version": "1.0.0",
+  "description": "朋友約飯神器 — 各自填條件，自動推薦雙北餐廳並投票",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node lib/roles.test.js && node tools/osm-lib.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.23.0"
+  },
+  "license": "MIT"
+}

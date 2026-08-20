@@ -1,0 +1,27 @@
+# Render 的藍圖檔。在 Render 按 New → Blueprint 選這個 repo，
+# 它會照這份設定一次把「網站」跟「資料庫」都建好，不用自己一格一格填。
+services:
+  - type: web
+    name: mealvote
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # 資料庫連線字串由 Render 自動填入，不用自己複製貼上
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mealvote-db
+          property: connectionString
+
+databases:
+  # 免費方案的資料庫「建立後 30 天到期」，到期就得重建一個。
+  # 這個 app 的資料本來就是一次性的（30 天前的房間會自動清掉），
+  # 所以重建只是把新的連線字串換上去，不會有資料要搬。
+  - name: mealvote-db
+    plan: free
+    databaseName: mealvote
+    user: mealvote

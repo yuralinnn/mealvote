@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e2622f">
+<title>朋友約飯神器</title>
+<meta name="description" content="三五好友各自填條件，自動配對雙北餐廳並投票決定。">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 首頁 ============ -->
+  <div id="viewHome">
+    <div class="top">
+      <div class="logo">🍽️</div>
+      <h1>朋友約飯神器</h1>
+      <p>各自填條件，剩下的交給它決定</p>
+    </div>
+
+    <div class="card">
+      <h2>開一場飯局</h2>
+      <p class="sub">建好之後把連結丟群組，大家各自填就好</p>
+
+      <div class="field">
+        <label>飯局名稱</label>
+        <input type="text" id="hTitle" placeholder="例：週五下班聚餐" maxlength="40">
+      </div>
+      <div class="field">
+        <label>日期與時間</label>
+        <div class="row">
+          <input type="date" id="hDate">
+          <input type="time" id="hTime" value="19:00">
+        </div>
+      </div>
+      <button class="btn" id="btnCreate">建立飯局</button>
+    </div>
+
+    <div class="card">
+      <h2>已經有房號了？</h2>
+      <p class="sub">輸入朋友給你的 6 碼房號</p>
+      <div class="row">
+        <input type="text" id="hJoin" placeholder="例：K7M2QP" maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-weight:800">
+        <button class="btn ghost" id="btnJoin" style="flex:0 0 100px">進入</button>
+      </div>
+    </div>
+
+    <footer>
+      收錄雙北 <b id="statR">—</b> 家餐廳 · 台北捷運 <b id="statS">—</b> 站<br>
+      距離以「捷運站數」計算，會挑站數最少的走法
+    </footer>
+  </div>
+
+  <!-- ============ 房間 ============ -->
+  <div id="viewRoom" class="hide">
+    <div class="roombar">
+      <div id="roomView">
+        <div class="titlerow">
+          <h2 id="rTitle">—</h2>
+          <button class="editbtn" id="btnEditRoom" title="改名稱或時間">✎ 編輯</button>
+        </div>
+        <p class="when" id="rWhen">—</p>
+      </div>
+
+      <div id="roomEdit" class="hide">
+        <div class="field"><label>飯局名稱</label>
+          <input type="text" id="eTitle" maxlength="40"></div>
+        <div class="field" style="margin-bottom:12px"><label>日期與時間</label>
+          <div class="row"><input type="date" id="eDate"><input type="time" id="eTime"></div></div>
+        <div class="row">
+          <button class="btn sm" id="btnSaveRoom" style="width:100%">儲存</button>
+          <button class="btn sm ghost" id="btnCancelRoom" style="width:100%">取消</button>
+        </div>
+      </div>
+
+      <div class="share">
+        <code id="rCode">—</code>
+        <button class="btn sm ghost" id="btnCopy">複製邀請連結</button>
+        <button class="btn sm ghost" id="btnHome">回首頁</button>
+      </div>
+    </div>
+
+    <div id="errBox"></div>
+
+    <!-- 我的條件 -->
+    <div class="card" id="meCard">
+      <h2 id="meTitle">填寫你的條件</h2>
+      <p class="sub" id="meSub">三個問題，20 秒填完</p>
+
+      <div id="meForm">
+        <div class="field">
+          <label>你的暱稱</label>
+          <input type="text" id="fName" placeholder="大家認得出來就好" maxlength="12">
+        </div>
+
+        <div class="field">
+          <label>你現在在哪 <span class="hint">最近的捷運站</span></label>
+          <input type="text" id="fStation" placeholder="直接打站名，例如：忠孝復興" autocomplete="off">
+          <div id="stationMsg"></div>
+          <button type="button" class="linkbtn" id="btnLines">🚇 依路線選擇</button>
+          <div id="linePicker" class="hide">
+            <div class="lines" id="lineList"></div>
+            <div class="stops" id="stopList"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>最遠可接受幾站 <span class="hint">從你所在的站算起</span></label>
+          <div class="seg" id="fDist">
+            <button data-v="2">2 站</button><button data-v="4">4 站</button>
+            <button data-v="6" class="on">6 站</button><button data-v="10">10 站</button>
+            <button data-v="40">不限</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>今天想吃啥 <span class="hint">可複選，最多 8 種</span></label>
+          <div class="opts" id="fTypes"></div>
+        </div>
+
+        <button class="btn" id="btnSubmit">送出我的條件</button>
+      </div>
+
+      <div id="meDone" class="hide">
+        <div class="m me">
+          <div class="av" id="meAv">—</div>
+          <div class="info"><b id="meName">—</b><div class="d" id="meDetail">—</div></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn ghost sm" id="btnEdit" style="width:100%">修改我的條件</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成員 -->
+    <div class="card">
+      <h2>已經填好的人 <span id="mCount" style="color:var(--ink3);font-weight:600"></span></h2>
+      <p class="sub">有人改條件的話，推薦與投票會重新來過</p>
+      <div class="mlist" id="mList"></div>
+      <div class="sticky">
+        <button class="btn green" id="btnGen">產生餐廳推薦</button>
+      </div>
+    </div>
+
+    <!-- 結果 -->
+    <div id="results"></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"></div>
+<script src="/app.js"></script>
+</body>
+</html>
