@@ -85,7 +85,7 @@
 - **沒有登入機制**，房間連結本身就是存取權限。
 - **只收暱稱**，不收電話、Email 或任何聯絡方式。
 - 角色、投票內容、彩蛋的真實店家都只存在伺服器端；`GET /api/rooms/:id` 這種公開端點不會帶出 `roles`、`ballots` 或成員的 `secret`。彩蛋的真實店家在投票期間同樣不外流，**結算後才公開**（這是刻意的，大家要知道去哪吃）。
-- 資料存成 JSON 檔，**單場聚餐結束就可以丟掉**——直接刪掉 `storage/` 目錄即可，沒有長期保存的設計。
+- 資料**單場聚餐結束就可以丟掉**——程式會自動清掉 30 天前的房間，沒有長期保存的設計。檔案模式直接刪 `storage/` 目錄，資料庫模式 `DROP TABLE mealvote_rooms` 或整個換一個免費資料庫就好。
 
 ## 本機跑起來
 
@@ -99,41 +99,104 @@ npm start
 
 ## 部署
 
-這是一個一般的 Node.js 伺服器，`npm start` 就會起來，PORT 從環境變數讀。
+這是一個一般的 Node.js 伺服器，`npm start` 就會起來，`PORT` 從環境變數讀。
 
 ### 先講一件會影響選擇的事
 
-房間資料存在一個 JSON 檔（預設 `./storage/rooms.json`），所以**主機的檔案系統會不會在重啟後被清空**，決定了你的房間會不會消失。
+房間資料要存在**重啟後還在**的地方。免費方案的主機幾乎都是「檔案系統暫時的」——服務休眠或重新部署之後，檔案會回到剛部署的樣子。
 
-不過對這個 app 來說，這件事沒有想像中嚴重：一場飯局從開房間到吃完通常是幾小時內的事，房間本來就是短命的（程式裡也設定 30 天自動清掉舊房間）。**如果你不介意「伺服器重啟時、正在進行中的房間可能消失」，用免費方案就夠了。**
+這對一般的小專案不痛不癢，但對這個 app 很致命：它的使用情境正好是「早上開房間、大家陸陸續續填、傍晚才投票」，中間一定會閒置。Render 免費方案**閒置 15 分鐘就休眠**，醒來時檔案已經清空——大家填的東西全沒了。
 
-### Railway（推薦）
+所以儲存層做成兩種後端，開機時自己判斷：
 
-1. 把這個資料夾推到 GitHub，在 Railway 選 Deploy from GitHub repo
-2. Railway 會自己認出是 Node 專案，不用設定 build command
-3. 想要資料持久化的話：建立一個 Volume 掛到 `/app/data`，然後加環境變數 `DATA_DIR=/app/data`
-   （Volume 需要付費方案；不加也能跑，只是重啟會清空）
+| 有沒有 `DATABASE_URL` | 用什麼 | 重啟後 |
+|---|---|---|
+| 有 | PostgreSQL | 資料還在 ✅ |
+| 沒有 | `./storage/rooms.json` | 看主機的檔案系統 |
 
-### Render
+程式碼不用改，**部署時多設一個 `DATABASE_URL` 就切換過去了**。連不上資料庫也不會讓服務起不來，會退回檔案模式並在 log 印出警告。開機那一行 log 會直接寫現在是哪一種，`/healthz` 也看得到。
 
-同樣接 GitHub repo，Build Command `npm install`、Start Command `npm start`。
+### Render（一步一步）
 
-Render 的 **免費方案不支援 Persistent Disk**，檔案系統在每次重新部署或重啟時都會清空，而且閒置一段時間後服務會休眠。付費方案可以掛 Disk，掛好之後設 `DATA_DIR` 指到掛載路徑。
+**0. 先把程式碼放到 GitHub**
 
-### Fly.io
+專案裡已經有一個 git commit 了，只要建遠端 repo 再推上去：
 
-`fly launch` 之後 `fly volumes create data --size 1`，在 `fly.toml` 掛到 `/data`，設 `DATA_DIR=/data`。
+```bash
+cd mealvote
+git remote add origin https://github.com/你的帳號/mealvote.git
+git branch -M main
+git push -u origin main
+```
 
-### ⚠️ 不要用 Vercel / Netlify 的 serverless
+（還沒有 repo 的話，先到 github.com/new 建一個空的，**不要**勾 Add README。）
 
-那類平台每次請求可能落在不同的執行實例上，檔案寫進去下一秒就不見了。要用的話得先把儲存層換成外部資料庫（見下方）。
+**1. 建立 Render 帳號**
+
+到 [render.com](https://render.com) 用 GitHub 帳號登入。**免費方案不需要信用卡。**
+
+**2. 用 Blueprint 一次建好**
+
+專案根目錄有 `render.yaml`，Render 看得懂：
+
+1. Dashboard 按 **New +** → **Blueprint**
+2. 選剛剛推上去的 repo → **Connect**
+3. 它會列出要建立的東西：一個 Web Service（`mealvote`）＋一個 PostgreSQL（`mealvote-db`）
+4. 按 **Apply**
+
+`render.yaml` 裡已經把資料庫的連線字串接到網站的 `DATABASE_URL` 了，**不用自己複製貼上**。
+
+**3. 等它跑完**
+
+第一次大約 2–4 分鐘。看到 **Live** 就好了，網址長得像 `https://mealvote-xxxx.onrender.com`。
+
+**4. 確認資料庫真的接上了**
+
+打開 `https://你的網址/healthz`，應該看到：
+
+```json
+{"ok":true,"storage":"pg","rooms":0}
+```
+
+`"storage":"pg"` 才是對的。如果是 `"file"`，代表資料庫沒接上，去 Web Service 的 **Logs** 看警告訊息。
+
+**5. 讓它不要一直睡著**
+
+免費方案閒置 15 分鐘會休眠，下一個人點連結要等大約一分鐘才醒。資料不會掉（在資料庫裡），只是等待很尷尬。
+
+免費的解法：到 [cron-job.org](https://cron-job.org) 註冊，建一個每 10 分鐘打一次 `https://你的網址/healthz` 的排程就好。
+
+（每個月有 750 小時的免費額度，一直醒著大約會用掉 744 小時，剛好在額度內，但只夠一個服務。）
+
+**6. 分享給朋友**
+
+網址直接丟群組。房間連結本身就是入場券，不需要登入。
+
+### ⚠️ 免費 PostgreSQL 三十天會到期
+
+Render 的免費資料庫**建立後 30 天到期**，之後會連不上（還有 14 天寬限期才真的刪掉）。到期時：
+
+1. 建一個新的免費 PostgreSQL
+2. 把 Web Service 的 `DATABASE_URL` 換成新的 Internal Database URL
+3. Manual Deploy 一次
+
+**不用搬資料** —— 這個 app 的房間本來就是一次性的，程式也會自動清掉 30 天前的房間。到期那天剛好等於全部重來，沒有損失。
+
+到期時服務不會掛掉，它會退回檔案模式繼續跑（log 有警告），只是重啟會掉資料。
+
+### 其他平台
+
+- **Railway**：接 GitHub repo 就會自己認出是 Node 專案。加一個 PostgreSQL 服務，Railway 會自動注入 `DATABASE_URL`。
+- **Fly.io**：`fly launch` 之後 `fly volumes create data --size 1`，`fly.toml` 掛到 `/data`，設 `DATA_DIR=/data` 就能用檔案模式持久化（不需要資料庫）。
+- **不要用 Vercel / Netlify 的 serverless**：每次請求可能落在不同執行實例，記憶體裡的房間對不起來。這個 app 需要一個「一直在的行程」。
 
 ### 環境變數
 
 | 變數 | 預設 | 說明 |
 |---|---|---|
 | `PORT` | `3000` | 監聽的埠號，多數平台會自動注入 |
-| `DATA_DIR` | `./storage` | 資料檔存放目錄，指到 volume 掛載點就能持久化 |
+| `DATABASE_URL` | 空 | 設了就用 PostgreSQL，沒設就用 JSON 檔 |
+| `DATA_DIR` | `./storage` | 檔案模式的存放目錄，指到 volume 掛載點就能持久化 |
 | `GOOGLE_MAPS_API_KEY` | 空 | 選填，見下一段 |
 
 ## 選填：接上 Google 即時評分
@@ -252,12 +315,13 @@ data/osm-restaurants.json  跑過匯入腳本才會出現
 lib/recommend.js        推薦演算法：共識區與類型區
 lib/roles.js            角色抽籤、隱藏彩蛋、計票規則
 lib/roles.test.js       上面那支的離線測試
-lib/store.js            JSON 檔持久化
+lib/store.js            持久化：有 DATABASE_URL 走 PostgreSQL，沒有就走 JSON 檔
 lib/places.js           選填的 Google Places 串接
 tools/import-osm.js     從 OpenStreetMap 匯入餐廳
 tools/osm-lib.js        匯入的純邏輯（分類、指派車站、去重）
 tools/osm-lib.test.js   上面那支的離線測試
 public/                 前端（單頁、無框架、行動裝置優先）
+render.yaml             Render 的藍圖：一次建好網站＋免費 PostgreSQL
 build-preview.js        產生單檔預覽版 preview.html
 e2e.js                  Playwright 端對端測試
 ```
