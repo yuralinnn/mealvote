@@ -85,7 +85,7 @@
 - **沒有登入機制**，房間連結本身就是存取權限。
 - **只收暱稱**，不收電話、Email 或任何聯絡方式。
 - 角色、投票內容、彩蛋的真實店家都只存在伺服器端；`GET /api/rooms/:id` 這種公開端點不會帶出 `roles`、`ballots` 或成員的 `secret`。彩蛋的真實店家在投票期間同樣不外流，**結算後才公開**（這是刻意的，大家要知道去哪吃）。
-- 資料**單場聚餐結束就可以丟掉**——程式會自動清掉 30 天前的房間，沒有長期保存的設計。檔案模式直接刪 `storage/` 目錄，資料庫模式 `DROP TABLE mealvote_rooms` 或整個換一個免費資料庫就好。
+- 資料**單場聚餐結束就可以丟掉**——程式會自動清掉 30 天前的房間（serverless 沒有排程可跑，所以掛在「建立新房間」時偶爾執行一次），沒有長期保存的設計。檔案模式直接刪 `storage/` 目錄；資料庫模式 `DROP TABLE mealvote_rooms` 就整個乾淨了。
 
 ## 本機跑起來
 
@@ -99,105 +99,71 @@ npm start
 
 ## 部署
 
-這是一個一般的 Node.js 伺服器，`npm start` 就會起來，`PORT` 從環境變數讀。
+這是一個一般的 Express app，`npm start` 就會起來。**同一份程式碼可以跑在兩種環境**：
 
-### 先講一件會影響選擇的事
+- **一直在的伺服器**（自己的機器、Render、Railway、Fly.io）
+- **serverless**（Vercel）—— 沒有常駐行程，每次請求都可能落在不同的執行實例
 
-房間資料要存在**重啟後還在**的地方。免費方案的主機幾乎都是「檔案系統暫時的」——服務休眠或重新部署之後，檔案會回到剛部署的樣子。
+推薦 **Vercel + Neon**，完整步驟見 `部署步驟.md`。
 
-這對一般的小專案不痛不癢，但對這個 app 很致命：它的使用情境正好是「早上開房間、大家陸陸續續填、傍晚才投票」，中間一定會閒置。Render 免費方案**閒置 15 分鐘就休眠**，醒來時檔案已經清空——大家填的東西全沒了。
+### 儲存層：兩種後端
 
-所以儲存層做成兩種後端，開機時自己判斷：
-
-| 有沒有 `DATABASE_URL` | 用什麼 | 重啟後 |
+| 有沒有 `DATABASE_URL` | 用什麼 | 什麼時候用 |
 |---|---|---|
-| 有 | PostgreSQL | 資料還在 ✅ |
-| 沒有 | `./storage/rooms.json` | 看主機的檔案系統 |
+| 有 | PostgreSQL | 部署（必須） |
+| 沒有 | `./storage/rooms.json` | 本機開發 |
 
-程式碼不用改，**部署時多設一個 `DATABASE_URL` 就切換過去了**。連不上資料庫也不會讓服務起不來，會退回檔案模式並在 log 印出警告。開機那一行 log 會直接寫現在是哪一種，`/healthz` 也看得到。
+程式碼不用改，設一個環境變數就切換。開機那行 log 跟 `/healthz` 都會寫現在是哪一種。
 
-### Render（一步一步）
+### 為什麼儲存層長這樣
 
-**0. 先把程式碼放到 GitHub**
+早期版本把所有房間放在記憶體、延遲寫檔。單機很好用，但 serverless 上會壞掉：
+每次請求可能是不同的執行實例，記憶體裡的房間對不起來；而且函式回應之後就被凍結，
+延遲寫入根本來不及跑。所以規則改成 **每一次請求都直接讀資料庫、寫完才回應**，
+不依賴任何跨請求的記憶體狀態。
 
-專案裡已經有一個 git commit 了，只要建遠端 repo 再推上去：
+第二個問題比較隱晦：房間是一整包 JSON，所有修改都是「讀出來 → 改 → 整包寫回去」。
+同一個行程裡這樣做是安全的（Node 單執行緒），但兩個執行實例同時處理
+「兩個人幾乎同時按送出」時，會各自讀到同一份舊資料、各自改、各自寫回，
+**後寫的把先寫的整包蓋掉** —— 有人的票憑空消失，壞皇后的下毒順序也會錯亂。
 
-```bash
-cd mealvote
-git remote add origin https://github.com/你的帳號/mealvote.git
-git branch -M main
-git push -u origin main
+所以凡是會改到房間的操作，一律走 `store.update()`：開一個交易，
+`SELECT ... FOR UPDATE` 把那一列鎖住，改完 commit 才放行。同一個房間的併發修改會排隊。
+
+這不是理論上的顧慮。實際量過，八個併發寫入不上鎖只會留下一筆：
+
+```
+不上鎖，8 個人同時寫 → 最後只剩 1 票
+有上鎖，8 個人同時寫 → 最後留下 8 票
 ```
 
-（還沒有 repo 的話，先到 github.com/new 建一個空的，**不要**勾 Add README。）
-
-**1. 建立 Render 帳號**
-
-到 [render.com](https://render.com) 用 GitHub 帳號登入。**免費方案不需要信用卡。**
-
-**2. 用 Blueprint 一次建好**
-
-專案根目錄有 `render.yaml`，Render 看得懂：
-
-1. Dashboard 按 **New +** → **Blueprint**
-2. 選剛剛推上去的 repo → **Connect**
-3. 它會列出要建立的東西：一個 Web Service（`mealvote`）＋一個 PostgreSQL（`mealvote-db`）
-4. 按 **Apply**
-
-`render.yaml` 裡已經把資料庫的連線字串接到網站的 `DATABASE_URL` 了，**不用自己複製貼上**。
-
-**3. 等它跑完**
-
-第一次大約 2–4 分鐘。看到 **Live** 就好了，網址長得像 `https://mealvote-xxxx.onrender.com`。
-
-**4. 確認資料庫真的接上了**
-
-打開 `https://你的網址/healthz`，應該看到：
-
-```json
-{"ok":true,"storage":"pg","rooms":0}
-```
-
-`"storage":"pg"` 才是對的。如果是 `"file"`，代表資料庫沒接上，去 Web Service 的 **Logs** 看警告訊息。
-
-**5. 讓它不要一直睡著**
-
-免費方案閒置 15 分鐘會休眠，下一個人點連結要等大約一分鐘才醒。資料不會掉（在資料庫裡），只是等待很尷尬。
-
-免費的解法：到 [cron-job.org](https://cron-job.org) 註冊，建一個每 10 分鐘打一次 `https://你的網址/healthz` 的排程就好。
-
-（每個月有 750 小時的免費額度，一直醒著大約會用掉 744 小時，剛好在額度內，但只夠一個服務。）
-
-**6. 分享給朋友**
-
-網址直接丟群組。房間連結本身就是入場券，不需要登入。
-
-### ⚠️ 免費 PostgreSQL 三十天會到期
-
-Render 的免費資料庫**建立後 30 天到期**，之後會連不上（還有 14 天寬限期才真的刪掉）。到期時：
-
-1. 建一個新的免費 PostgreSQL
-2. 把 Web Service 的 `DATABASE_URL` 換成新的 Internal Database URL
-3. Manual Deploy 一次
-
-**不用搬資料** —— 這個 app 的房間本來就是一次性的，程式也會自動清掉 30 天前的房間。到期那天剛好等於全部重來，沒有損失。
-
-到期時服務不會掛掉，它會退回檔案模式繼續跑（log 有警告），只是重啟會掉資料。
-
-### 其他平台
-
-- **Railway**：接 GitHub repo 就會自己認出是 Node 專案。加一個 PostgreSQL 服務，Railway 會自動注入 `DATABASE_URL`。
-- **Fly.io**：`fly launch` 之後 `fly volumes create data --size 1`，`fly.toml` 掛到 `/data`，設 `DATA_DIR=/data` 就能用檔案模式持久化（不需要資料庫）。
-- **不要用 Vercel / Netlify 的 serverless**：每次請求可能落在不同執行實例，記憶體裡的房間對不起來。這個 app 需要一個「一直在的行程」。
+唯一刻意留在交易外面的是 `POST /generate` 的推薦計算與（選用的）Google 評分查詢——
+那可能要花上幾百毫秒甚至等外部 API，握著鎖去等會把同房間的其他人一起卡住。
+作法是先在鎖外面算，進交易後比對成員指紋，有人中途改條件就用最新名單重算一次（很快、純計算）。
 
 ### 環境變數
 
 | 變數 | 預設 | 說明 |
 |---|---|---|
+| `DATABASE_URL` | 空 | 設了就用 PostgreSQL，沒設就用 JSON 檔。**部署一定要設** |
 | `PORT` | `3000` | 監聽的埠號，多數平台會自動注入 |
-| `DATABASE_URL` | 空 | 設了就用 PostgreSQL，沒設就用 JSON 檔 |
-| `DATA_DIR` | `./storage` | 檔案模式的存放目錄，指到 volume 掛載點就能持久化 |
+| `DATA_DIR` | `./storage` | 檔案模式的存放目錄 |
+| `PG_POOL_MAX` | `3` | 連線池上限。serverless 上每個實例同時只處理一兩個請求，開太多只是浪費 |
 | `GOOGLE_MAPS_API_KEY` | 空 | 選填，見下一段 |
+
+### 平台差異
+
+| | Vercel + Neon | Render 免費方案 |
+|---|---|---|
+| 閒置會不會睡著 | 不會 | 會，15 分鐘休眠，醒來約 1 分鐘 |
+| keep-alive | 不用 | 要自己掛 |
+| 資料庫到期 | Neon 免費方案永久 | 免費 PostgreSQL 30 天到期 |
+| 限制 | Hobby 僅限非商業用途 | 每月 750 實例小時 |
+
+Render 的設定檔 `render.yaml` 也留在專案裡，`New + → Blueprint` 選 repo 就會一起建好網站與資料庫。
+
+Fly.io / Railway 這類「一直在的伺服器」兩種後端都能用；不想開資料庫的話，
+掛一個 volume 再設 `DATA_DIR` 指過去，檔案模式也能持久化。
 
 ## 選填：接上 Google 即時評分
 
@@ -304,6 +270,8 @@ OSM 撈得到店，但**撈不到價位**——而「便宜」正是小吃最重
 - **角色的保密靠的是伺服器不吐資料，不是前端藏起來**。這對朋友聚餐夠了；但拿到房間連結的人都能加入，所以連結本身要當成密碼看待。
 - **笨蛋的轉盤只從推薦名單裡抽**，不含神秘店家——不然「不能自己選」的人反而被塞了一家連他自己都不知道是什麼的店。
 - **彩蛋那 10 秒是前端計時的**，決定記在瀏覽器的 localStorage。這擋得住「重整一次再想想」，但擋不住刻意去改瀏覽器資料的人。朋友聚餐的小遊戲，做到這裡就夠了；真要防弊得把倒數搬到伺服器上。
+- **前端每 3.5 秒輪詢一次**，沒有用 WebSocket。人少的時候完全夠用，也讓 serverless 部署變得單純（serverless 撐不起長連線）。代價是別人的動作最多會晚 3.5 秒才出現在你畫面上。
+- **提前結算誰都能按**，沒有「只有發起人可以」的權限。這是刻意的——這個 app 連登入都沒有，沒有辦法認出誰是發起人。
 
 ## 專案結構
 
@@ -316,31 +284,57 @@ lib/recommend.js        推薦演算法：共識區與類型區
 lib/roles.js            角色抽籤、隱藏彩蛋、計票規則
 lib/roles.test.js       上面那支的離線測試
 lib/store.js            持久化：有 DATABASE_URL 走 PostgreSQL，沒有就走 JSON 檔
+api/index.js            Vercel 的 serverless 進入點（只是把 app 交出去）
+vercel.json             Vercel 設定：所有網址導到 api/index.js
 lib/places.js           選填的 Google Places 串接
 tools/import-osm.js     從 OpenStreetMap 匯入餐廳
 tools/osm-lib.js        匯入的純邏輯（分類、指派車站、去重）
 tools/osm-lib.test.js   上面那支的離線測試
 public/                 前端（單頁、無框架、行動裝置優先）
 render.yaml             Render 的藍圖：一次建好網站＋免費 PostgreSQL
+部署步驟.md              Vercel + Neon 的逐步教學
 build-preview.js        產生單檔預覽版 preview.html
 e2e.js                  Playwright 端對端測試
+race.js                 併發測試：多人同時寫入不會互相覆蓋
+serverless.js           跨行程測試：同一場飯局輪流打到兩個獨立行程
 ```
 
 ## 跑測試
 
-```bash
-npm install playwright && npx playwright install chromium
-npm start                  # 另開一個終端機
-node e2e.js
-```
-
-會開三個獨立的瀏覽器 context（等於三支不同的手機）模擬開房、填寫、產生推薦、各自看到自己的角色卡、彩蛋的 10 秒視窗（賭一把／放棄／逾時鎖住）、複選投票、依序送出、自動結算、神秘店家揭曉、再玩一局（角色與彩蛋重抽）、改條件與即時同步，並且會**主動檢查隱私邊界**：公開 API 不得帶出 `roles`／`secret`／`ballots`／彩蛋真實店家，結算前任何人畫面上都不得出現票數。
-
 不需連網、不需開伺服器的離線測試：
 
 ```bash
-node lib/roles.test.js       # 角色與計票規則（權重、下毒、盲選交換的所有組合）
-node tools/osm-lib.test.js   # OSM 匯入邏輯（分類、指派車站、去重）
+npm test                     # 角色計票規則 + OSM 匯入邏輯
+node lib/roles.test.js       # 只跑角色（權重、下毒、盲選交換的所有組合）
+node tools/osm-lib.test.js   # 只跑 OSM 匯入（分類、指派車站、去重）
+```
+
+需要伺服器的測試：
+
+```bash
+npm install playwright && npx playwright install chromium
+npm start                    # 另開一個終端機
+node e2e.js                  # 三支手機的完整流程
+node race.js                 # 併發寫入
+```
+
+`e2e.js` 會開三個獨立的瀏覽器 context（等於三支不同的手機）模擬開房、填寫、產生推薦、
+各自看到自己的角色卡、彩蛋的 10 秒視窗（賭一把／放棄／逾時鎖住）、複選投票、依序送出、
+自動結算、神秘店家揭曉、再玩一局（角色與彩蛋重抽）、改條件與即時同步，並且會**主動檢查隱私邊界**：
+公開 API 不得帶出 `roles`／`secret`／`ballots`／彩蛋真實店家，結算前任何人畫面上都不得出現票數。
+
+`race.js` 模擬「好幾個人同時按下送出」：六個人同時加入、六張票同時送出、
+同一個人連按兩次、一邊投票一邊有人改條件。驗證沒有人的票會被蓋掉、
+壞皇后的毒不會因為併發變成毒到兩個人。
+
+`serverless.js` 是給部署前用的：開兩個**互不相干的行程**指向同一個資料庫，
+讓同一場飯局的每一次請求輪流打到不同行程 —— 這正是 Vercel 上會發生的事。
+程式只要有一點點依賴記憶體狀態，這裡就會爆。
+
+```bash
+DATABASE_URL=... npm start                    # 終端機 A
+DATABASE_URL=... PORT=3001 npm start          # 終端機 B
+node serverless.js                            # 終端機 C
 ```
 
 ## 預覽版
